@@ -7,7 +7,12 @@ document.getElementById("connect").onclick = async () => {
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
-  sendSignal(peerId, "offer", offer);
+  
+  // Send offer in format Flutter expects
+  sendSignal(peerId, "offer", {
+    sdp: offer.sdp,
+    type: offer.type
+  });
 };
 
 document.getElementById("send").onclick = () =>

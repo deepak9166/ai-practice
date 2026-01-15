@@ -11,12 +11,42 @@ function createPeer(isCaller) {
 
   pc.onicecandidate = e => {
     if (e.candidate) {
-      sendSignal(peerId, "candidate", e.candidate);
+      // Send ICE candidate in format Flutter expects
+      sendSignal(peerId, "candidate", {
+        candidate: e.candidate.candidate,
+        sdpMid: e.candidate.sdpMid,
+        sdpMLineIndex: e.candidate.sdpMLineIndex
+      });
+    } else {
+      console.log("ICE gathering complete");
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    console.log("Connection state:", pc.connectionState);
+    log(`Connection: ${pc.connectionState}`);
+  };
+
+  pc.oniceconnectionstatechange = () => {
+    console.log("ICE connection state:", pc.iceConnectionState);
+    if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
+      log("✅ WebRTC connection established!");
+    } else if (pc.iceConnectionState === "failed") {
+      log("❌ ICE connection failed");
     }
   };
 
   pc.ontrack = e => {
-    console.log("Remote stream received");
+    console.log("Remote stream received from Flutter app");
+    log("📹 Video/audio stream received from Flutter");
+    // You can display the stream here if needed
+    if (e.streams && e.streams[0]) {
+      // Example: attach to video element
+      // const video = document.createElement('video');
+      // video.srcObject = e.streams[0];
+      // video.autoplay = true;
+      // document.body.appendChild(video);
+    }
   };
 
   pc.ondatachannel = e => {
@@ -31,29 +61,75 @@ function createPeer(isCaller) {
 }
 
 function setupDataChannel() {
-  dataChannel.onopen = () => log("P2P Connected ✅");
-  dataChannel.onmessage = e => log("Peer: " + e.data);
+  dataChannel.onopen = () => {
+    log("P2P Connected ✅");
+    console.log("Data channel opened with Flutter app");
+  };
+  dataChannel.onmessage = e => {
+    const message = typeof e.data === 'string' ? e.data : 'Binary data received';
+    log("Flutter: " + message);
+  };
+  dataChannel.onerror = e => {
+    console.error("Data channel error:", e);
+    log("❌ Data channel error");
+  };
+  dataChannel.onclose = () => {
+    log("Data channel closed");
+    console.log("Data channel closed");
+  };
 }
 
 /* ---------- SIGNAL HANDLER ---------- */
 
 async function handleSignal(data) {
-  if (data.type === "offer") {
-    peerId = data.from;
-    createPeer(false);
-    await pc.setRemoteDescription(data.payload);
+  try {
+    if (data.type === "offer") {
+      peerId = data.from;
+      createPeer(false);
+      
+      // Handle SDP from Flutter (may come as object with sdp and type, or as RTCSessionDescription)
+      const sdp = data.payload.sdp || data.payload;
+      const type = data.payload.type || "offer";
+      await pc.setRemoteDescription(new RTCSessionDescription({ sdp, type }));
 
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    sendSignal(peerId, "answer", answer);
-  }
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      
+      // Send answer in format Flutter expects
+      sendSignal(peerId, "answer", {
+        sdp: answer.sdp,
+        type: answer.type
+      });
+      log("✅ Sent answer to Flutter app");
+    }
 
-  if (data.type === "answer") {
-    await pc.setRemoteDescription(data.payload);
-  }
+    if (data.type === "answer") {
+      // Handle SDP from Flutter
+      const sdp = data.payload.sdp || data.payload;
+      const type = data.payload.type || "answer";
+      await pc.setRemoteDescription(new RTCSessionDescription({ sdp, type }));
+      log("✅ Received answer from Flutter app");
+    }
 
-  if (data.type === "candidate") {
-    await pc.addIceCandidate(data.payload);
+    if (data.type === "candidate") {
+      // Handle ICE candidate from Flutter
+      // Flutter sends: { candidate, sdpMid, sdpMLineIndex }
+      // JavaScript expects: RTCIceCandidateInit
+      const candidate = data.payload.candidate || data.payload;
+      const sdpMid = data.payload.sdpMid || null;
+      const sdpMLineIndex = data.payload.sdpMLineIndex ?? null;
+      
+      if (candidate) {
+        await pc.addIceCandidate(new RTCIceCandidate({
+          candidate: candidate,
+          sdpMid: sdpMid,
+          sdpMLineIndex: sdpMLineIndex
+        }));
+      }
+    }
+  } catch (error) {
+    console.error("Error handling signal:", error);
+    log("❌ Error: " + error.message);
   }
 }
 
