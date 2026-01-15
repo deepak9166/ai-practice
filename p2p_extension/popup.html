@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial; width: 300px; }
+    button { margin: 4px 0; width: 100%; }
+    input { width: 100%; margin: 4px 0; }
+    #chat { height: 100px; overflow: auto; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+<input id="myId" placeholder="Your ID" />
+<input id="peerId" placeholder="Peer ID" />
+
+<button id="connect">Connect</button>
+<button id="call">Audio/Video Call</button>
+<button id="screen">Screen Share</button>
+
+<input id="msg" placeholder="Message" />
+<button id="send">Send Message</button>
+
+<input type="file" id="file" />
+
+<div id="chat"></div>
+
+<script src="signaling.js"></script>
+<script src="webrtc.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
