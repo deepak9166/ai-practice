@@ -1,43 +1,24 @@
-import 'dart:convert';
-import 'package:web_socket_channel/web_socket_channel.dart';
-
+// Direct P2P signaling via QR code - no WebSocket needed
 class Signaling {
-  final String url;
-  late WebSocketChannel _channel;
-  late String myId;
-
   Function(Map<String, dynamic>)? onMessage;
 
-  Signaling(this.url);
+  Signaling();
 
+  // No connection needed - we use QR codes
   void connect(String userId) {
-    myId = userId;
-    _channel = WebSocketChannel.connect(Uri.parse(url));
-
-    _channel.sink.add(jsonEncode({
-      "join": true,
-      "userId": myId,
-    }));
-
-    _channel.stream.listen((message) {
-      onMessage?.call(jsonDecode(message));
-    });
+    // No-op for direct P2P
   }
 
+  // No send needed - we use QR codes
   void send({
     required String to,
     required String type,
     required dynamic payload,
   }) {
-    _channel.sink.add(jsonEncode({
-      "from": myId,
-      "to": to,
-      "type": type,
-      "payload": payload,
-    }));
+    // No-op for direct P2P
   }
 
   void dispose() {
-    _channel.sink.close();
+    // No-op for direct P2P
   }
 }

@@ -11,14 +11,16 @@ function createPeer(isCaller) {
 
   pc.onicecandidate = e => {
     if (e.candidate) {
-      // Send ICE candidate in format Flutter expects
-      sendSignal(peerId, "candidate", {
-        candidate: e.candidate.candidate,
-        sdpMid: e.candidate.sdpMid,
-        sdpMLineIndex: e.candidate.sdpMLineIndex
-      });
+      // ICE candidates will be included in SDP when gathering completes
+      console.log("ICE candidate:", e.candidate.candidate);
     } else {
       console.log("ICE gathering complete");
+      // Notify that SDP is ready for QR code
+      if (isCaller) {
+        log("✅ Offer ready - Show QR code");
+      } else {
+        log("✅ Answer ready - Show QR code");
+      }
     }
   };
 
@@ -39,14 +41,6 @@ function createPeer(isCaller) {
   pc.ontrack = e => {
     console.log("Remote stream received from Flutter app");
     log("📹 Video/audio stream received from Flutter");
-    // You can display the stream here if needed
-    if (e.streams && e.streams[0]) {
-      // Example: attach to video element
-      // const video = document.createElement('video');
-      // video.srcObject = e.streams[0];
-      // video.autoplay = true;
-      // document.body.appendChild(video);
-    }
   };
 
   pc.ondatachannel = e => {
@@ -63,7 +57,6 @@ function createPeer(isCaller) {
 function setupDataChannel() {
   dataChannel.onopen = () => {
     log("P2P Connected ✅");
-    console.log("Data channel opened with Flutter app");
   };
   dataChannel.onmessage = e => {
     const message = typeof e.data === 'string' ? e.data : 'Binary data received';
@@ -75,69 +68,143 @@ function setupDataChannel() {
   };
   dataChannel.onclose = () => {
     log("Data channel closed");
-    console.log("Data channel closed");
   };
 }
 
-/* ---------- SIGNAL HANDLER ---------- */
-
-async function handleSignal(data) {
+// Create offer and wait for ICE gathering
+async function createOfferForQR() {
   try {
-    if (data.type === "offer") {
-      peerId = data.from;
-      createPeer(false);
-      
-      // Handle SDP from Flutter (may come as object with sdp and type, or as RTCSessionDescription)
-      const sdp = data.payload.sdp || data.payload;
-      const type = data.payload.type || "offer";
-      await pc.setRemoteDescription(new RTCSessionDescription({ sdp, type }));
-
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      
-      // Send answer in format Flutter expects
-      sendSignal(peerId, "answer", {
-        sdp: answer.sdp,
-        type: answer.type
-      });
-      log("✅ Sent answer to Flutter app");
+    log("Initializing peer connection...");
+    createPeer(true);
+    
+    log("Creating offer...");
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    
+    log("Waiting for ICE gathering to complete...");
+    // Wait for ICE gathering to complete
+    await waitForIceGathering();
+    
+    log("ICE gathering complete, getting final SDP...");
+    // Get the updated SDP with all ICE candidates from local description
+    const finalSdp = pc.localDescription;
+    
+    if (!finalSdp) {
+      throw new Error("Failed to get local description");
     }
-
-    if (data.type === "answer") {
-      // Handle SDP from Flutter
-      const sdp = data.payload.sdp || data.payload;
-      const type = data.payload.type || "answer";
-      await pc.setRemoteDescription(new RTCSessionDescription({ sdp, type }));
-      log("✅ Received answer from Flutter app");
-    }
-
-    if (data.type === "candidate") {
-      // Handle ICE candidate from Flutter
-      // Flutter sends: { candidate, sdpMid, sdpMLineIndex }
-      // JavaScript expects: RTCIceCandidateInit
-      const candidate = data.payload.candidate || data.payload;
-      const sdpMid = data.payload.sdpMid || null;
-      const sdpMLineIndex = data.payload.sdpMLineIndex ?? null;
-      
-      if (candidate) {
-        await pc.addIceCandidate(new RTCIceCandidate({
-          candidate: candidate,
-          sdpMid: sdpMid,
-          sdpMLineIndex: sdpMLineIndex
-        }));
-      }
-    }
+    
+    log("✅ Offer created successfully");
+    return {
+      sdp: finalSdp.sdp,
+      type: finalSdp.type
+    };
   } catch (error) {
-    console.error("Error handling signal:", error);
-    log("❌ Error: " + error.message);
+    log("❌ Error in createOfferForQR: " + error.message);
+    console.error("createOfferForQR error:", error);
+    throw error;
   }
+}
+
+// Handle offer from QR code
+async function handleOfferFromQR(sdp, sdpType) {
+  try {
+    log("Handling offer from QR code...");
+    createPeer(false);
+    await pc.setRemoteDescription(new RTCSessionDescription({ sdp, type: sdpType }));
+    
+    log("Creating answer...");
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    
+    log("Waiting for ICE gathering...");
+    // Wait for ICE gathering
+    await waitForIceGathering();
+    
+    log("Getting final answer SDP...");
+    // Get the updated SDP with all ICE candidates from local description
+    const finalSdp = pc.localDescription;
+    
+    if (!finalSdp) {
+      throw new Error("Failed to get local description");
+    }
+    
+    log("✅ Answer created successfully");
+    return {
+      sdp: finalSdp.sdp,
+      type: finalSdp.type
+    };
+  } catch (error) {
+    log("❌ Error in handleOfferFromQR: " + error.message);
+    console.error("handleOfferFromQR error:", error);
+    throw error;
+  }
+}
+
+// Handle answer from QR code
+async function handleAnswerFromQR(sdp, sdpType) {
+  if (!pc) {
+    throw new Error("No peer connection");
+  }
+  await pc.setRemoteDescription(new RTCSessionDescription({ sdp, type: sdpType }));
+  log("✅ Answer received - Connection establishing");
+}
+
+// Wait for ICE gathering to complete
+function waitForIceGathering() {
+  return new Promise((resolve) => {
+    if (!pc) {
+      console.error("No peer connection for ICE gathering");
+      resolve();
+      return;
+    }
+    
+    // Check if already complete
+    if (pc.iceGatheringState === "complete") {
+      log("ICE gathering already complete");
+      resolve();
+      return;
+    }
+    
+    // Listen for gathering state change
+    const onGatheringStateChange = () => {
+      log(`ICE gathering state: ${pc.iceGatheringState}`);
+      if (pc.iceGatheringState === "complete") {
+        pc.removeEventListener("icegatheringstatechange", onGatheringStateChange);
+        clearInterval(checkInterval);
+        log("ICE gathering completed");
+        resolve();
+      }
+    };
+    
+    pc.addEventListener("icegatheringstatechange", onGatheringStateChange);
+    
+    // Also poll as backup
+    const checkInterval = setInterval(() => {
+      if (pc.iceGatheringState === "complete") {
+        pc.removeEventListener("icegatheringstatechange", onGatheringStateChange);
+        clearInterval(checkInterval);
+        log("ICE gathering completed (polling)");
+        resolve();
+      }
+    }, 200);
+    
+    // Timeout after 15 seconds
+    setTimeout(() => {
+      pc.removeEventListener("icegatheringstatechange", onGatheringStateChange);
+      clearInterval(checkInterval);
+      log("⚠️ ICE gathering timeout - proceeding anyway");
+      resolve(); // Resolve anyway
+    }, 15000);
+  });
 }
 
 /* ---------- CHAT ---------- */
 
 function sendMessage(msg) {
-  dataChannel.send(msg);
-  log("Me: " + msg);
+  if (dataChannel && dataChannel.readyState === "open") {
+    dataChannel.send(msg);
+    log("Me: " + msg);
+  }
 }
 
 /* ---------- FILE TRANSFER ---------- */
@@ -181,5 +248,10 @@ async function startScreenShare() {
 /* ---------- UI ---------- */
 
 function log(msg) {
-  document.getElementById("chat").innerHTML += `<div>${msg}</div>`;
+  const chat = document.getElementById("chat");
+  if (chat) {
+    chat.innerHTML += `<div>${msg}</div>`;
+    chat.scrollTop = chat.scrollHeight;
+  }
+  console.log(msg);
 }

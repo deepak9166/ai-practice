@@ -1,12 +1,8 @@
 {
-  "name": "p2p-signaling-server",
+  "name": "p2p-extension",
   "version": "1.0.0",
-  "description": "WebSocket signaling server for P2P WebRTC",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "ws": "^8.14.2"
-  }
+  "description": "Direct P2P WebRTC extension with QR code signaling",
+  "main": "popup.js",
+  "scripts": {},
+  "dependencies": {}
 }

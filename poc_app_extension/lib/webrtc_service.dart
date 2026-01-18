@@ -34,7 +34,8 @@ class WebRTCService {
     });
 
     pc!.onIceCandidate = (c) {
-      signaling.send(to: peerId, type: "candidate", payload: c.toMap());
+      // ICE candidates are included in SDP when gathering completes
+      // No need to send separately for direct P2P
     };
 
     pc!.onTrack = (e) {
@@ -51,7 +52,14 @@ class WebRTCService {
           state == RTCIceConnectionState.RTCIceConnectionStateCompleted) {
         onConnectionStatusChanged?.call("WebRTC connected!");
       } else if (state == RTCIceConnectionState.RTCIceConnectionStateFailed) {
-        onConnectionStatusChanged?.call("Connection failed");
+        onConnectionStatusChanged?.call(
+          "Connection failed - Tap Reset to try again",
+        );
+        onDataChannelStateChanged?.call(false);
+      } else if (state ==
+          RTCIceConnectionState.RTCIceConnectionStateDisconnected) {
+        onConnectionStatusChanged?.call("Connection disconnected");
+        onDataChannelStateChanged?.call(false);
       }
     };
 
@@ -161,33 +169,76 @@ class WebRTCService {
     }
   }
 
+  // Handle SDP from QR code
+  Future<void> handleOfferFromQR(String sdp, String type) async {
+    await createPeer(isCaller: false);
+    await pc!.setRemoteDescription(RTCSessionDescription(sdp, type));
+    final answer = await pc!.createAnswer();
+    await pc!.setLocalDescription(answer);
+
+    // Notify UI to show answer QR code
+    onConnectionStatusChanged?.call("Answer created - Show QR code");
+  }
+
+  Future<void> handleAnswerFromQR(String sdp, String type) async {
+    if (pc == null) {
+      onConnectionStatusChanged?.call("Error: No peer connection");
+      return;
+    }
+    await pc!.setRemoteDescription(RTCSessionDescription(sdp, type));
+    onConnectionStatusChanged?.call(
+      "Answer received - Connection establishing",
+    );
+  }
+
+  // Get offer for QR code
+  Future<Map<String, dynamic>> createOfferForQR() async {
+    await createPeer(isCaller: true);
+    final offer = await pc!.createOffer();
+    await pc!.setLocalDescription(offer);
+
+    // Wait for ICE gathering to complete
+    await _waitForIceGathering();
+
+    // Get updated SDP with all candidates
+    final updatedOffer = await pc!.createOffer();
+    await pc!.setLocalDescription(updatedOffer);
+
+    return {"sdp": updatedOffer.sdp, "type": updatedOffer.type};
+  }
+
+  // Get answer for QR code
+  Future<Map<String, dynamic>> createAnswerForQR() async {
+    if (pc == null) {
+      throw Exception("No peer connection");
+    }
+    final answer = await pc!.createAnswer();
+    await pc!.setLocalDescription(answer);
+
+    // Wait for ICE gathering to complete
+    await _waitForIceGathering();
+
+    // Get updated SDP with all candidates
+    final updatedAnswer = await pc!.createAnswer();
+    await pc!.setLocalDescription(updatedAnswer);
+
+    return {"sdp": updatedAnswer.sdp, "type": updatedAnswer.type};
+  }
+
+  Future<void> _waitForIceGathering() async {
+    // Wait for ICE gathering to complete (max 10 seconds)
+    int attempts = 0;
+    while (pc!.iceGatheringState !=
+            RTCIceGatheringState.RTCIceGatheringStateComplete &&
+        attempts < 100) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+  }
+
+  // Legacy method for compatibility (no-op now)
   Future<void> handleSignal(Map<String, dynamic> data) async {
-    if (data["type"] == "offer") {
-      peerId = data["from"];
-      await createPeer(isCaller: false);
-      await pc!.setRemoteDescription(
-        RTCSessionDescription(data["payload"]["sdp"], data["payload"]["type"]),
-      );
-      final answer = await pc!.createAnswer();
-      await pc!.setLocalDescription(answer);
-      signaling.send(to: peerId, type: "answer", payload: answer.toMap());
-    }
-
-    if (data["type"] == "answer") {
-      await pc!.setRemoteDescription(
-        RTCSessionDescription(data["payload"]["sdp"], data["payload"]["type"]),
-      );
-    }
-
-    if (data["type"] == "candidate" && pc != null) {
-      await pc!.addCandidate(
-        RTCIceCandidate(
-          data["payload"]["candidate"],
-          data["payload"]["sdpMid"],
-          data["payload"]["sdpMLineIndex"],
-        ),
-      );
-    }
+    // No-op - we use QR codes now
   }
 
   Future<void> startCall() async {
@@ -242,9 +293,74 @@ class WebRTCService {
     print("File sent: $fileName");
   }
 
+  Future<void> reset() async {
+    print("Resetting WebRTC connection...");
+
+    // Close data channel
+    if (dataChannel != null) {
+      try {
+        await dataChannel!.close();
+      } catch (e) {
+        print("Error closing data channel: $e");
+      }
+      dataChannel = null;
+    }
+
+    // Close peer connection
+    if (pc != null) {
+      try {
+        await pc!.close();
+      } catch (e) {
+        print("Error closing peer connection: $e");
+      }
+      pc = null;
+    }
+
+    // Reset file receiving state
+    _receivingFileName = null;
+    _receivingFileSize = null;
+    _receivingFileChunks.clear();
+
+    // Reset peer ID
+    peerId = "";
+
+    // Notify UI
+    onDataChannelStateChanged?.call(false);
+    onConnectionStatusChanged?.call(
+      "Connection reset - Ready for new connection",
+    );
+
+    print("WebRTC connection reset complete");
+  }
+
+  Future<void> reconnect({required String newPeerId}) async {
+    print("Reconnecting with peer: $newPeerId");
+
+    // Reset existing connection
+    await reset();
+
+    // Set new peer ID
+    peerId = newPeerId;
+
+    // Create new peer connection as caller
+    await createPeer(isCaller: true);
+
+    // Create offer for QR code
+    try {
+      await createOfferForQR();
+      onConnectionStatusChanged?.call(
+        "Reconnection offer ready - Show QR code",
+      );
+    } catch (error) {
+      print("Error creating reconnection offer: $error");
+      onConnectionStatusChanged?.call("Reconnection failed: $error");
+    }
+  }
+
   void dispose() {
     localRenderer.dispose();
     remoteRenderer.dispose();
     pc?.close();
+    dataChannel?.close();
   }
 }

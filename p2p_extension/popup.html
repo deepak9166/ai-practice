@@ -10,10 +10,27 @@
 </head>
 <body>
 
-<input id="myId" placeholder="Your ID" />
-<input id="peerId" placeholder="Peer ID" />
+<!-- Simple Peer ID Connection -->
+<div style="background:#e3f2fd;padding:8px;border-radius:4px;margin-bottom:8px;">
+  <p style="margin:4px 0;font-size:11px;font-weight:bold;color:#1976d2;">✨ Simple Connection (Peer ID):</p>
+  <input id="myPeerId" placeholder="Your Peer ID (optional - leave empty for auto)" style="width:100%;padding:4px;font-size:11px;margin:4px 0;border:1px solid #90caf9;border-radius:4px;" />
+  <input id="peerIdInput" placeholder="Enter Peer ID to connect" style="width:100%;padding:4px;font-size:11px;margin:4px 0;border:1px solid #90caf9;border-radius:4px;" />
+  <button id="connectPeerId" style="width:100%;padding:6px;background:#1976d2;color:white;border:none;border-radius:4px;cursor:pointer;margin:4px 0;font-weight:bold;">Connect by Peer ID</button>
+  <p id="myPeerIdDisplay" style="margin:4px 0;font-size:10px;color:#1976d2;word-break:break-all;font-family:monospace;padding:4px;background:white;border-radius:4px;border:1px solid #90caf9;">
+    <strong>Your Peer ID:</strong> <span id="peerIdValue" style="color:#666;">Initializing peer connection...</span>
+  </p>
+  <p id="connectionStatus" style="margin:4px 0;font-size:10px;color:#666;padding:4px;background:#f5f5f5;border-radius:4px;">
+    <strong>Status:</strong> <span id="statusText">Not connected</span>
+  </p>
+</div>
 
-<button id="connect">Connect</button>
+<hr style="margin:8px 0;border:none;border-top:1px solid #ddd;">
+
+<!-- QR Code for Peer ID -->
+<p style="margin:4px 0;font-size:11px;color:#666;">Share/Scan Peer ID via QR:</p>
+<button id="createPeerIdQR">Create QR for Peer ID</button>
+<button id="scanPeerIdQR">Scan Peer ID QR</button>
+<hr style="margin:8px 0;border:none;border-top:1px solid #ddd;">
 <button id="call">Audio/Video Call</button>
 <button id="screen">Screen Share</button>
 
@@ -24,8 +41,10 @@
 
 <div id="chat"></div>
 
-<script src="signaling.js"></script>
-<script src="webrtc.js"></script>
+<script src="peerjs.min.js"></script>
+<script src="qrcode-simple.js"></script>
+<script src="init-check.js"></script>
+<script src="peerjs-handler.js"></script>
 <script src="popup.js"></script>
 </body>
 </html>
