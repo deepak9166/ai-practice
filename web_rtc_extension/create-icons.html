@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Extension Icons</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generate Extension Icons</h1>
+    <p>Click the button below to generate placeholder icons for the extension.</p>
+    <button onclick="generateIcons()">Generate Icons</button>
+    <div id="canvases"></div>
+    <p id="status"></p>
+
+    <script>
+        function generateIcons() {
+            const sizes = [16, 48, 128];
+            const container = document.getElementById('canvases');
+            container.innerHTML = '';
+            const status = document.getElementById('status');
+            status.textContent = 'Generating icons...';
+
+            sizes.forEach(size => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                canvas.id = `canvas${size}`;
+                container.appendChild(canvas);
+
+                const ctx = canvas.getContext('2d');
+                
+                // Draw background
+                ctx.fillStyle = '#2196f3';
+                ctx.fillRect(0, 0, size, size);
+                
+                // Draw "W" for WebRTC
+                ctx.fillStyle = 'white';
+                ctx.font = `bold ${size * 0.6}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('W', size / 2, size / 2);
+
+                // Convert to blob and download
+                canvas.toBlob(blob => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `icon${size}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                });
+            });
+
+            status.textContent = 'Icons generated! Check your downloads folder and move them to the web_rtc_extension directory.';
+        }
+    </script>
+</body>
+</html>
+
