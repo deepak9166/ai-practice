@@ -1,12 +1,11 @@
-import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:poc_app_extension/peer_service.dart';
-// import 'package:file_picker/file_picker.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'signaling.dart';
-import 'webrtc_service.dart';
+
+
 
 class CallScreen extends StatefulWidget {
   const CallScreen({super.key});
@@ -16,8 +15,8 @@ class CallScreen extends StatefulWidget {
 }
 
 class _CallScreenState extends State<CallScreen> {
-  late Signaling signaling;
-  late WebRTCService rtc;
+  // late Signaling signaling;
+  // late WebRTCService rtc;
   PeerService? peerService; // For peer ID connections
 
   final myIdCtrl = TextEditingController();
@@ -42,9 +41,9 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
-    signaling = Signaling();
-    rtc = WebRTCService(signaling);
-    rtc.init();
+    // signaling = Signaling();
+    // rtc = WebRTCService(signaling);
+    // rtc.init();
 
     // Initialize PeerService for peer ID connections
     peerService = PeerService();
@@ -61,6 +60,11 @@ class _CallScreenState extends State<CallScreen> {
         _connectionStatus = status;
       });
     };
+    peerService!.updatePeerID = (id) {
+      setState(() {
+        _myPeerId = id;
+      });
+    };
     peerService!.onConnectionStateChanged = (isConnected) {
       setState(() {
         _isConnected = isConnected;
@@ -70,70 +74,6 @@ class _CallScreenState extends State<CallScreen> {
 
     // Auto-initialize peer service
     _initPeerService();
-
-    // Setup callbacks for WebRTCService (fallback)
-    rtc.onMessageReceived = (message) {
-      if (!_usePeerService) {
-        setState(() {
-          _messages.add(
-            ChatMessage(
-              text: message,
-              isSent: false,
-              timestamp: DateTime.now(),
-            ),
-          );
-        });
-        _scrollToBottom();
-      }
-    };
-
-    rtc.onConnectionStatusChanged = (status) {
-      if (!_usePeerService) {
-        setState(() {
-          _connectionStatus = status;
-          // Check if connection failed
-          if (status.contains("failed") || status.contains("disconnected")) {
-            _isConnected = false;
-          }
-        });
-      }
-    };
-
-    rtc.onDataChannelStateChanged = (isConnected) {
-      if (!_usePeerService) {
-        setState(() {
-          _isConnected = isConnected;
-        });
-      }
-    };
-
-    rtc.onFileReceived = (fileName, fileData) {
-      // Show file received notification
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("File received: $fileName (${fileData.length} bytes)"),
-          action: SnackBarAction(
-            label: "Save",
-            onPressed: () {
-              // TODO: Implement file saving
-              // You can use path_provider and file writing here
-            },
-          ),
-        ),
-      );
-      // Add a message to chat showing file was received
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            text:
-                "📎 File received: $fileName (${(fileData.length / 1024).toStringAsFixed(1)} KB)",
-            isSent: false,
-            timestamp: DateTime.now(),
-          ),
-        );
-      });
-      _scrollToBottom();
-    };
   }
 
   void _scrollToBottom() {
@@ -157,7 +97,7 @@ class _CallScreenState extends State<CallScreen> {
     if (_usePeerService && peerService != null) {
       peerService!.sendMessage(message);
     } else {
-      rtc.sendMessage(message);
+      // rtc.sendMessage(message);
     }
 
     setState(() {
@@ -175,7 +115,7 @@ class _CallScreenState extends State<CallScreen> {
       final customId = myIdCtrl.text.trim().isEmpty
           ? null
           : myIdCtrl.text.trim();
-      final peerId = await peerService!.init(customId: customId);
+      final peerId = await peerService!.init();
       setState(() {
         _myPeerId = peerId;
       });
@@ -191,308 +131,11 @@ class _CallScreenState extends State<CallScreen> {
     myIdCtrl.dispose();
     peerIdCtrl.dispose();
     msgCtrl.dispose();
-    rtc.dispose();
+    // rtc.dispose();
     peerService?.dispose();
     super.dispose();
   }
 
-  // @override
-  // Widget build(BuildContext context) {
-  //   return Scaffold(
-  //     appBar: AppBar(
-  //       title: const Text("Flutter ↔ Extension P2P"),
-  //       bottom: PreferredSize(
-  //         preferredSize: const Size.fromHeight(30),
-  //         child: Container(
-  //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-  //           child: Row(
-  //             children: [
-  //               Container(
-  //                 width: 10,
-  //                 height: 10,
-  //                 decoration: BoxDecoration(
-  //                   shape: BoxShape.circle,
-  //                   color: _isConnected ? Colors.green : Colors.red,
-  //                 ),
-  //               ),
-  //               const SizedBox(width: 8),
-  //               Expanded(
-  //                 child: Text(
-  //                   _connectionStatus,
-  //                   style: TextStyle(
-  //                     color: _isConnected ? Colors.green : Colors.grey,
-  //                     fontSize: 12,
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //     body: Column(
-  //       children: [
-  //         // Connection Setup Section
-  //         Container(
-  //           padding: const EdgeInsets.all(16),
-  //           color: Colors.grey[100],
-  //           child: Column(
-  //             children: [
-  //               TextField(
-  //                 controller: myIdCtrl,
-  //                 decoration: const InputDecoration(
-  //                   labelText: "My ID",
-  //                   border: OutlineInputBorder(),
-  //                   isDense: true,
-  //                 ),
-  //               ),
-  //               const SizedBox(height: 8),
-  //               TextField(
-  //                 controller: peerIdCtrl,
-  //                 decoration: const InputDecoration(
-  //                   labelText: "Peer ID",
-  //                   border: OutlineInputBorder(),
-  //                   isDense: true,
-  //                 ),
-  //               ),
-  //               const SizedBox(height: 8),
-  //               Row(
-  //                 children: [
-  //                   Expanded(
-  //                     child: ElevatedButton.icon(
-  //                       onPressed: _isConnected
-  //                           ? null
-  //                           : () async {
-  //                               if (myIdCtrl.text.isEmpty ||
-  //                                   peerIdCtrl.text.isEmpty) {
-  //                                 ScaffoldMessenger.of(context).showSnackBar(
-  //                                   const SnackBar(
-  //                                     content: Text(
-  //                                       "Please enter both User ID and Peer ID",
-  //                                     ),
-  //                                   ),
-  //                                 );
-  //                                 return;
-  //                               }
-  //                               setState(() {
-  //                                 _connectionStatus = "Creating offer...";
-  //                               });
-  //                               try {
-  //                                 final offer = await rtc.createOfferForQR();
-  //                                 final qrData = jsonEncode({
-  //                                   "type": "offer",
-  //                                   "sdp": offer["sdp"],
-  //                                   "sdpType": offer["type"],
-  //                                 });
-  //                                 setState(() {
-  //                                   _offerQRData = qrData;
-  //                                   _showOfferQR = true;
-  //                                   _connectionStatus =
-  //                                       "Show QR code to extension";
-  //                                 });
-  //                               } catch (e) {
-  //                                 setState(() {
-  //                                   _connectionStatus = "Error: $e";
-  //                                 });
-  //                               }
-  //                             },
-  //                       icon: const Icon(Icons.qr_code),
-  //                       label: const Text("Create Offer"),
-  //                     ),
-  //                   ),
-  //                   const SizedBox(width: 8),
-  //                   IconButton(
-  //                     onPressed: _isConnected
-  //                         ? () async {
-  //                             await rtc.startCall();
-  //                             ScaffoldMessenger.of(context).showSnackBar(
-  //                               const SnackBar(
-  //                                 content: Text("Starting call..."),
-  //                               ),
-  //                             );
-  //                           }
-  //                         : null,
-  //                     icon: const Icon(Icons.videocam),
-  //                     tooltip: "Start Call",
-  //                     style: IconButton.styleFrom(
-  //                       backgroundColor: Colors.green[50],
-  //                     ),
-  //                   ),
-  //                   IconButton(
-  //                     onPressed: _isConnected
-  //                         ? () async {
-  //                             final result = await FilePicker.platform
-  //                                 .pickFiles();
-  //                             if (result != null &&
-  //                                 result.files.single.path != null) {
-  //                               final file = File(result.files.single.path!);
-  //                               final fileData = await file.readAsBytes();
-  //                               await rtc.sendFile(
-  //                                 fileData,
-  //                                 result.files.single.name,
-  //                               );
-  //                               ScaffoldMessenger.of(context).showSnackBar(
-  //                                 SnackBar(
-  //                                   content: Text(
-  //                                     "Sending file: ${result.files.single.name}",
-  //                                   ),
-  //                                 ),
-  //                               );
-  //                             }
-  //                           }
-  //                         : null,
-  //                     icon: const Icon(Icons.attach_file),
-  //                     tooltip: "Send File",
-  //                     style: IconButton.styleFrom(
-  //                       backgroundColor: Colors.blue[50],
-  //                     ),
-  //                   ),
-  //                   // Reset button - show when connection failed or disconnected
-  //                   if (_connectionStatus.contains("failed") ||
-  //                       _connectionStatus.contains("disconnected") ||
-  //                       _connectionStatus.contains("reset"))
-  //                     IconButton(
-  //                       onPressed: () async {
-  //                         await rtc.reset();
-  //                         setState(() {
-  //                           _isConnected = false;
-  //                           _connectionStatus = "Reset - Ready to connect";
-  //                           _messages.clear();
-  //                         });
-  //                         ScaffoldMessenger.of(context).showSnackBar(
-  //                           const SnackBar(
-  //                             content: Text(
-  //                               "Connection reset. You can try connecting again.",
-  //                             ),
-  //                           ),
-  //                         );
-  //                       },
-  //                       icon: const Icon(Icons.refresh),
-  //                       tooltip: "Reset Connection",
-  //                       style: IconButton.styleFrom(
-  //                         backgroundColor: Colors.orange[50],
-  //                       ),
-  //                     ),
-  //                   // Reconnect button - show when connection failed
-  //                   if (_connectionStatus.contains("failed") &&
-  //                       peerIdCtrl.text.isNotEmpty)
-  //                     IconButton(
-  //                       onPressed: () async {
-  //                         setState(() {
-  //                           _connectionStatus = "Reconnecting...";
-  //                         });
-  //                         await rtc.reconnect(newPeerId: peerIdCtrl.text);
-  //                       },
-  //                       icon: const Icon(Icons.replay),
-  //                       tooltip: "Reconnect",
-  //                       style: IconButton.styleFrom(
-  //                         backgroundColor: Colors.blue[50],
-  //                       ),
-  //                     ),
-  //                 ],
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-
-  //         // Chat Section
-  //         Expanded(
-  //           child: Container(
-  //             color: Colors.grey[50],
-  //             child: Column(
-  //               children: [
-  //                 // Messages List
-  //                 Expanded(
-  //                   child: _messages.isEmpty
-  //                       ? Center(
-  //                           child: Column(
-  //                             mainAxisAlignment: MainAxisAlignment.center,
-  //                             children: [
-  //                               Icon(
-  //                                 Icons.chat_bubble_outline,
-  //                                 size: 64,
-  //                                 color: Colors.grey[400],
-  //                               ),
-  //                               const SizedBox(height: 16),
-  //                               Text(
-  //                                 _isConnected
-  //                                     ? "Start chatting..."
-  //                                     : "Connect to start chatting",
-  //                                 style: TextStyle(
-  //                                   color: Colors.grey[600],
-  //                                   fontSize: 16,
-  //                                 ),
-  //                               ),
-  //                             ],
-  //                           ),
-  //                         )
-  //                       : ListView.builder(
-  //                           controller: _scrollController,
-  //                           padding: const EdgeInsets.all(16),
-  //                           itemCount: _messages.length,
-  //                           itemBuilder: (context, index) {
-  //                             return _buildMessageBubble(_messages[index]);
-  //                           },
-  //                         ),
-  //                 ),
-
-  //                 // Message Input
-  //                 Container(
-  //                   padding: const EdgeInsets.all(8),
-  //                   decoration: BoxDecoration(
-  //                     color: Colors.white,
-  //                     boxShadow: [
-  //                       BoxShadow(
-  //                         color: Colors.black.withOpacity(0.1),
-  //                         blurRadius: 4,
-  //                         offset: const Offset(0, -2),
-  //                       ),
-  //                     ],
-  //                   ),
-  //                   child: SafeArea(
-  //                     child: Row(
-  //                       children: [
-  //                         Expanded(
-  //                           child: TextField(
-  //                             controller: msgCtrl,
-  //                             decoration: InputDecoration(
-  //                               hintText: "Type a message...",
-  //                               border: OutlineInputBorder(
-  //                                 borderRadius: BorderRadius.circular(24),
-  //                               ),
-  //                               contentPadding: const EdgeInsets.symmetric(
-  //                                 horizontal: 16,
-  //                                 vertical: 8,
-  //                               ),
-  //                               filled: true,
-  //                               fillColor: Colors.grey[100],
-  //                             ),
-  //                             enabled: _isConnected,
-  //                             onSubmitted: (_) => _sendMessage(),
-  //                           ),
-  //                         ),
-  //                         const SizedBox(width: 8),
-  //                         IconButton(
-  //                           onPressed: _isConnected ? _sendMessage : null,
-  //                           icon: const Icon(Icons.send),
-  //                           color: Colors.blue,
-  //                           style: IconButton.styleFrom(
-  //                             backgroundColor: Colors.blue[50],
-  //                             padding: const EdgeInsets.all(12),
-  //                           ),
-  //                         ),
-  //                       ],
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ],
-  //             ),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -649,9 +292,7 @@ class _CallScreenState extends State<CallScreen> {
                                             myIdCtrl.text.trim().isEmpty
                                             ? null
                                             : myIdCtrl.text.trim();
-                                        await peerService!.init(
-                                          customId: customId,
-                                        );
+                                        await peerService!.init();
                                         setState(() {
                                           _myPeerId = peerService!.myPeerId;
                                         });
@@ -761,25 +402,25 @@ class _CallScreenState extends State<CallScreen> {
                     //   ),
                     // ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: _isConnected
-                              ? () async {
-                                  await rtc.startCall();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("Starting call..."),
-                                    ),
-                                  );
-                                }
-                              : null,
-                          icon: const Icon(Icons.videocam),
-                          tooltip: "Start Call",
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.green[50],
-                          ),
-                        ),
+                    // Row(
+                    //   children: [
+                    //     IconButton(
+                    //       onPressed: _isConnected
+                    //           ? () async {
+                    //               await rtc.startCall();
+                    //               ScaffoldMessenger.of(context).showSnackBar(
+                    //                 const SnackBar(
+                    //                   content: Text("Starting call..."),
+                    //                 ),
+                    //               );
+                    //             }
+                    //           : null,
+                    //       icon: const Icon(Icons.videocam),
+                    //       tooltip: "Start Call",
+                    //       style: IconButton.styleFrom(
+                    //         backgroundColor: Colors.green[50],
+                    //       ),
+                    //     ),
 
                         // IconButton(
                         //   onPressed: _isConnected
@@ -812,8 +453,8 @@ class _CallScreenState extends State<CallScreen> {
                         //     backgroundColor: Colors.blue[50],
                         //   ),
                         // ),
-                      ],
-                    ),
+                    //   ],
+                    // ),
                   ],
                 ),
               ),
@@ -1023,33 +664,33 @@ class _CallScreenState extends State<CallScreen> {
   Future<void> _processConnectionData(String data) async {
     try {
       // Try to parse as JSON first (for backward compatibility)
-      try {
-        final decoded = jsonDecode(data);
-        if (decoded["type"] == "offer") {
-          await rtc.handleOfferFromQR(decoded["sdp"], decoded["sdpType"]);
-          // Create answer and show QR
-          final answer = await rtc.createAnswerForQR();
-          final answerQR = jsonEncode({
-            "type": "answer",
-            "sdp": answer["sdp"],
-            "sdpType": answer["type"],
-          });
-          setState(() {
-            _answerQRData = answerQR;
-            _showAnswerQR = true;
-            _connectionStatus = "Show Answer QR to extension";
-          });
-          return;
-        } else if (decoded["type"] == "answer") {
-          await rtc.handleAnswerFromQR(decoded["sdp"], decoded["sdpType"]);
-          setState(() {
-            _connectionStatus = "Answer received - Connecting...";
-          });
-          return;
-        }
-      } catch (jsonError) {
-        // Not JSON, treat as peer ID string
-      }
+      // try {
+      //   final decoded = jsonDecode(data);
+      //   if (decoded["type"] == "offer") {
+      //     await rtc.handleOfferFromQR(decoded["sdp"], decoded["sdpType"]);
+      //     // Create answer and show QR
+      //     final answer = await rtc.createAnswerForQR();
+      //     final answerQR = jsonEncode({
+      //       "type": "answer",
+      //       "sdp": answer["sdp"],
+      //       "sdpType": answer["type"],
+      //     });
+      //     setState(() {
+      //       _answerQRData = answerQR;
+      //       _showAnswerQR = true;
+      //       _connectionStatus = "Show Answer QR to extension";
+      //     });
+      //     return;
+      //   } else if (decoded["type"] == "answer") {
+      //     await rtc.handleAnswerFromQR(decoded["sdp"], decoded["sdpType"]);
+      //     setState(() {
+      //       _connectionStatus = "Answer received - Connecting...";
+      //     });
+      //     return;
+      //   }
+      // } catch (jsonError) {
+      //   // Not JSON, treat as peer ID string
+      // }
 
       // Treat as peer ID string
       final peerId = data.trim();
