@@ -1,19 +1,5 @@
 # P2P Extension - Setup Guide
 
-## How WebSocket Signaling Works
-
-**WebSocket is NOT WebRTC** - it's used for **signaling** (exchanging connection info).
-
-### The Flow:
-1. **WebSocket (Signaling)** → Exchange "I want to connect" messages, offers, answers, ICE candidates
-2. **WebRTC** → Once connected, handles all peer-to-peer data/media directly
-
-### Why localhost:3000?
-
-- `localhost:3000` means the WebSocket server runs on **your own computer**
-- Both peers must be on the **same machine** for this to work
-- For real-world use, you need a **remote signaling server**
-
 ## Setup Instructions
 
 ### 1. Install Dependencies

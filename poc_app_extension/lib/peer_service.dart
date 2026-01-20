@@ -1,4 +1,5 @@
 // Peer service using peer_rtc package for simple peer ID connections
+
 import 'package:peer_rtc/peer_rtc.dart';
 
 class PeerService {
@@ -9,20 +10,22 @@ class PeerService {
 
   Function(String message)? onMessageReceived;
   Function(String status)? onConnectionStatusChanged;
+  Function(String id)? updatePeerID;
   Function(bool isConnected)? onConnectionStateChanged;
 
   // Initialize peer connection
-  Future<String> init({String? customId}) async {
+  Future<String> init() async {
     try {
       onConnectionStatusChanged?.call("Initializing peer connection...");
 
       // Create peer with optional custom ID
-      peer = Peer(id: customId, options: PeerOptions(autoReconnect: true));
+      peer = Peer(  options: PeerOptions(autoReconnect: true));
 
       // Listen for peer open event to get ID
       peer!.onOpen.listen((id) {
         myPeerId =
-            id ?? customId ?? "peer_${DateTime.now().millisecondsSinceEpoch}";
+            id;
+        updatePeerID?.call(myPeerId ?? '');    
         onConnectionStatusChanged?.call("Peer ready. Your ID: $myPeerId");
       });
 
@@ -43,9 +46,7 @@ class PeerService {
       // Wait a bit for peer to initialize, then return ID
       await Future.delayed(const Duration(milliseconds: 500));
       myPeerId =
-          peer!.id ??
-          customId ??
-          "peer_${DateTime.now().millisecondsSinceEpoch}";
+          peer?.id ?? '' ;
 
       onConnectionStatusChanged?.call("Peer initialized. Your ID: $myPeerId");
       onConnectionStateChanged?.call(false);
