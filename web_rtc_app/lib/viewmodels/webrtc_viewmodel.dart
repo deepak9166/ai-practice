@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import '../services/webrtc_service.dart';
 import '../services/qr_service.dart';
 import '../models/connection_state.dart' as models;
