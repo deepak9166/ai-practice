@@ -53,5 +53,8 @@
 	<string>This app needs photo library access to select files for transfer</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>This app needs photo library access to save received files</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>This app requires local network access for model inference services.</string>
+
 </dict>
 </plist>

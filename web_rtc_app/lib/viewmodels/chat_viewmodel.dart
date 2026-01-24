@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import '../services/webrtc_service.dart';
 import '../models/chat_message.dart';
 import 'webrtc_viewmodel.dart';

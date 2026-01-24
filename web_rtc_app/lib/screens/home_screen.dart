@@ -15,6 +15,11 @@ class HomeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('WebRTC Mobile App'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(onPressed: (){
+                 Navigator.of(context).pushReplacementNamed('/ai-chat-screen');
+          }, icon: Icon(Icons.chat))
+        ],
       ),
       body: Center(
         child: Padding(
