@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:convert';
 
+import '../service/api_service.dart';
+import '../service/qr_scanner_screen.dart';
 import 'adm_sample.dart';
 import 'capture_frame_sample.dart';
 import 'data_packet_cryptor_sample.dart';
@@ -91,7 +94,12 @@ class _WebRTCManualSDPPageState extends State<WebRTCManualSDPPage> {
     await _peerConnection!.setLocalDescription(offer);
 
     // ✅ Proper JSON
-    _sdpController.text = jsonEncode(offer.toMap());
+    var value = jsonEncode(offer.toMap());
+    _sdpController.text = value;
+
+    var qrId = await ApiService.createQrCode(value);
+    print('qrId $qrId');
+    this.qrId.value = qrId;
   }
 
   /// DEVICE B
@@ -136,10 +144,28 @@ class _WebRTCManualSDPPageState extends State<WebRTCManualSDPPage> {
     super.dispose();
   }
 
+  ValueNotifier<String> qrId = ValueNotifier<String>('');
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Manual SDP WebRTC')),
+      appBar: AppBar(
+        title: const Text('Manual SDP WebRTC'),
+        actions: [
+          IconButton(
+            onPressed: () async {
+              var code = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => QRScannerScreen()),
+              );
+              if (code != null) {
+                _callGetQrCode(code);
+              }
+            },
+            icon: Icon(Icons.qr_code_scanner),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
@@ -149,6 +175,20 @@ class _WebRTCManualSDPPageState extends State<WebRTCManualSDPPage> {
                 Expanded(child: RTCVideoView(_remoteRenderer)),
               ],
             ),
+          ),
+          ValueListenableBuilder(
+            valueListenable: qrId,
+            builder: (context, value, child) {
+              if (value.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Column(
+                children: [
+                  QrImageView(data: value, version: QrVersions.auto, size: 200),
+                  Text(value),
+                ],
+              );
+            },
           ),
 
           Padding(
@@ -185,6 +225,13 @@ class _WebRTCManualSDPPageState extends State<WebRTCManualSDPPage> {
         ],
       ),
     );
+  }
+
+  void _callGetQrCode(code) {
+    ApiService.getQrCode(code).then((value) {
+      print('value $value');
+      _sdpController.text = value;
+    });
   }
 }
 
