@@ -30,21 +30,111 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  # UI
   cupertino_icons: ^1.0.8
+  super_tooltip: ^2.1.0
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+  hooks_riverpod: ^2.6.1
+
+  # Networking
+  dio: ^5.7.0
+
+  # Code Generation
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Localization
+  easy_localization: ^3.0.7
+  intl: ^0.20.2
+
+  # Environment
+  flutter_dotenv: ^5.1.0
+
+  # SVG IMAGE LOAD
+  flutter_svg: ^2.2.3
+
+  # Locally manage images for fast load
+  cached_network_image: ^3.4.1
+
+  # Manage navigation
+  go_router: ^17.0.0
+
+  # Intro screen indicator
+  smooth_page_indicator: ^1.2.1
+
+  # Country code pick for sign up or profile
+  country_code_picker: ^3.4.1
+
+  # OTP Verify for auth
+  otp_pin_field: ^1.4.1
+
+  # show toast in app
+  fluttertoast: ^9.0.0
+
+  # WebView for loading web content
+  webview_flutter: ^4.13.0
+
+  # Image picker for media upload
+  image_picker: ^1.1.2
+
+  # Permission handler for managing app permissions
+  permission_handler: ^11.3.1
+
+  # Dotted border for UI elements
+  dotted_border: ^2.1.0
+
+  # Local database
+  flutter_secure_storage: ^10.0.0
+
+  # Local Database
+  shared_preferences: ^2.5.3
+
+  dropdown_search: ^6.0.2
+
+  # Calender 
+  table_calendar: ^3.2.0
+
+  # graph
+  syncfusion_flutter_charts: ^31.1.19
+
+  azlistview: ^2.0.0
+
+
+  blur: ^4.0.2
+  
+  # video player
+  video_player: ^2.10.1
+
+
+  share_plus: ^12.0.1
+
+  # Local auth for Face ID & Fingure print
+  local_auth: ^3.0.0
+
+  # Firebase setup
+  firebase_core: ^4.3.0
+  firebase_auth: ^6.1.4
+  google_sign_in: ^7.2.0
+  flutter_facebook_auth: ^6.0.4
+  sign_in_with_apple: ^7.0.1
+
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^6.0.0
+  # Linting
+  flutter_lints: ^5.0.0
+
+  # Code Generation
+  build_runner: ^2.4.13
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
