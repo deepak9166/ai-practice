@@ -7,7 +7,7 @@ part 'sign_in_request.g.dart';
 ///
 /// Freezed model representing the request payload for sign-in API.
 @freezed
-class SignInRequest with _$SignInRequest {
+abstract class SignInRequest with _$SignInRequest {
   const factory SignInRequest({
     required String email,
     required String password,

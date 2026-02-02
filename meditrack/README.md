@@ -165,3 +165,23 @@ To create a reliable, easy-to-use, and intelligent medicine management app that 
 ---
 
 **MediTrack – Never Miss a Dose. Never Run Out.**
+
+
+PLAN LINK
+https://docs.google.com/document/d/1fzw5WdpfONwhKAbD6LgNA0hBIlq1I8yxKdsR2rRcNME/edit?usp=sharing
+
+
+COMMAND
+- FOR BUID FILES `flutter pub run build_runner build`
+- FOR BUID FILES IF CONFICT `flutter pub run build_runner build --delete-conflicting-outputs`
+
+
+FLUTTER VERSION
+Flutter `3.38.7` • channel stable • https://github.com/flutter/flutter.git
+Tools • Dart `3.10.7` • DevTools `2.51.1`
+
+
+
+MY NOTES
+- hospital medical history docs
+- Garelu upchar tips & custom added notes

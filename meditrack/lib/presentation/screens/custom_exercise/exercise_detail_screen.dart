@@ -7,7 +7,7 @@ import 'package:meditrack/presentation/common_widgets/custom_app_bar.dart';
 import 'package:meditrack/presentation/common_widgets/smart_image_view.dart';
 import 'package:meditrack/presentation/common_widgets/spacing_widgets.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 import 'package:meditrack/presentation/common_widgets/preview_video_player.dart';
 import 'package:meditrack/presentation/screens/custom_exercise/custom_widget/exercise_overview.dart';
 import 'package:meditrack/presentation/screens/custom_exercise/view_model/custom_exercise_view_model.dart';

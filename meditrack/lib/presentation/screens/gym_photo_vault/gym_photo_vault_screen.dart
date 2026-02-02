@@ -9,7 +9,7 @@ import '../../../enum/filter_enum.dart';
 import '../../../log/app_logs.dart';
 import '../../common_widgets/custom_search_bar.dart';
 import '../../common_widgets/spacing_widgets.dart';
-import '../landing/tab_excercise/filter/exercise_filter.dart';
+import '../landing_app/tab_excercise/filter/exercise_filter.dart';
 
 class GymPhotoVaultScreen extends StatefulWidget {
   const GymPhotoVaultScreen({super.key});

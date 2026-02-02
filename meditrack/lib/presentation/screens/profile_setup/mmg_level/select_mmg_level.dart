@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meditrack/core/constants/app_constants.dart';
 import 'package:meditrack/core/router/app_router.dart';
 import 'package:meditrack/presentation/common_widgets/spacing_widgets.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 
 import '../../../common_model/radio_value_model.dart';
 import '../../../common_widgets/custom_bottom_sheet_field.dart';

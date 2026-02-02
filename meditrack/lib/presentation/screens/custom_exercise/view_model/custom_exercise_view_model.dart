@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/core/constants/app_enums.dart';
-import 'package:meditrack/presentation/screens/base/base_view_model.dart';
-import 'package:meditrack/presentation/screens/base/screen_state.dart';
+import 'package:meditrack/presentation/screen/base/base_view_model.dart';
+import 'package:meditrack/presentation/screen/base/screen_state.dart';
 import 'package:image_picker/image_picker.dart';
 
 class CustomExerciseViewModel extends BaseViewModel {

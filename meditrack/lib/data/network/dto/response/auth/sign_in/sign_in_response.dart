@@ -7,7 +7,7 @@ part 'sign_in_response.g.dart';
 ///
 /// Freezed model representing the response from sign-in API.
 @freezed
-class SignInResponse with _$SignInResponse {
+abstract class SignInResponse with _$SignInResponse {
   const factory SignInResponse({
     required String token,
     required String refreshToken,
@@ -20,7 +20,7 @@ class SignInResponse with _$SignInResponse {
 
 /// User Data Model
 @freezed
-class UserData with _$UserData {
+abstract class UserData with _$UserData {
   const factory UserData({
     required String id,
     required String name,

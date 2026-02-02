@@ -8,7 +8,7 @@ import 'package:meditrack/log/app_logs.dart';
 import 'package:meditrack/presentation/common_widgets/custom_app_bar.dart';
 import 'package:meditrack/presentation/common_widgets/custom_template_popup_menu.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 import 'package:meditrack/presentation/screens/custom_exercise/custom_widget/custom_exercise_card_widget.dart';
 import 'package:meditrack/presentation/screens/custom_exercise/view_model/custom_exercise_view_model.dart';
 

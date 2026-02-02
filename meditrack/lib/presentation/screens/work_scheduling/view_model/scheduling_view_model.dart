@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:meditrack/presentation/screens/base/base_view_model.dart';
+import 'package:meditrack/presentation/screen/base/base_view_model.dart';
 
 class SchedulingViewModel extends BaseViewModel {
   final ValueNotifier<List<String>> _adminExercises = ValueNotifier(

@@ -9,7 +9,7 @@ import 'package:meditrack/core/theme/app_theme.dart';
 import 'package:meditrack/presentation/common_widgets/custom_app_bar.dart';
 import 'package:meditrack/presentation/common_widgets/smart_image_view.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 import 'package:meditrack/presentation/screens/my_account/view_model/my_account_view_model.dart';
 
 /// Home Screen

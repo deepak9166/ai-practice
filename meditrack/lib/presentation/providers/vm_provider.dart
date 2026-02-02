@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meditrack/presentation/screens/add_workout/view_model/add_workout_viewmodel.dart';
-import 'package:meditrack/presentation/screens/landing/tab_excercise/filter/filter_view_model.dart';
+import 'package:meditrack/presentation/screens/landing_app/tab_excercise/filter/filter_view_model.dart';
 import 'package:meditrack/presentation/screens/profile_setup/mmg_level/mmg_level_view_model.dart';
 import 'package:meditrack/presentation/screens/custom_exercise/view_model/custom_exercise_view_model.dart';
 import 'package:meditrack/presentation/screens/work_scheduling/view_model/scheduling_view_model.dart';
 import 'package:meditrack/presentation/screens/workout_history/view_model/workout_history_view_model.dart';
 import 'package:meditrack/presentation/screens/templates/view_model/templates_viewmodel.dart';
 
+import '../../data/local/app_database.dart';
 import '../../data/network/services/social_login_service.dart';
 import '../../enum/filter_enum.dart';
-import '../screens/auth/forgot_password/forgot_password_view_model.dart';
-import '../screens/auth/sign_in/sign_in_viewmodel.dart';
-import '../screens/auth/sign_up/sign_up_view_model.dart';
-import '../screens/landing/landing_view_model.dart';
+import '../screen/auth/forgot_password/forgot_password_view_model.dart';
+import '../screen/auth/sign_in/sign_in_viewmodel.dart';
+import '../screen/auth/sign_up/sign_up_view_model.dart';
+import '../screen/landing/add_medicine/add_medicine_view_model.dart';
+import '../screen/landing/landing_view_model.dart';
 import '../screens/my_account/view_model/my_account_view_model.dart';
 import 'auth_provider.dart';
 import 'language_provider.dart';
@@ -118,3 +120,26 @@ final customExerciseViewModel = ChangeNotifierProvider<CustomExerciseViewModel>(
     return CustomExerciseViewModel();
   },
 );
+
+/// NEW DATA
+
+final databaseProvider = Provider<AppDatabase>((ref) {
+  final db = AppDatabase();
+  ref.onDispose(db.close);
+  return db;
+});
+
+
+final addMedicineProvider = FutureProvider.family<int, MedicinesCompanion>(
+  (ref, medicine) async {
+    final db = ref.read(databaseProvider);
+    return db.addMedicine(medicine);
+  },
+);
+
+
+final addMedicineVm = Provider.autoDispose<AddMedicineViewModel>((
+  ref,
+) {
+  return AddMedicineViewModel();
+}); //AddMedicineViewModel

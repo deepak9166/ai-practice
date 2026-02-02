@@ -6,17 +6,16 @@ part of 'sign_up_response.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$SignUpResponseImpl _$$SignUpResponseImplFromJson(Map<String, dynamic> json) =>
-    _$SignUpResponseImpl(
+_SignUpResponse _$SignUpResponseFromJson(Map<String, dynamic> json) =>
+    _SignUpResponse(
       token: json['token'] as String,
       refreshToken: json['refreshToken'] as String,
       user: UserData.fromJson(json['user'] as Map<String, dynamic>),
     );
 
-Map<String, dynamic> _$$SignUpResponseImplToJson(
-  _$SignUpResponseImpl instance,
-) => <String, dynamic>{
-  'token': instance.token,
-  'refreshToken': instance.refreshToken,
-  'user': instance.user,
-};
+Map<String, dynamic> _$SignUpResponseToJson(_SignUpResponse instance) =>
+    <String, dynamic>{
+      'token': instance.token,
+      'refreshToken': instance.refreshToken,
+      'user': instance.user,
+    };

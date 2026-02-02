@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:meditrack/core/constants/app_enums.dart';
 import 'package:meditrack/core/router/app_router.dart';
 import 'package:meditrack/presentation/screens/add_workout/common_widgets/exercise_set.dart';
-import 'package:meditrack/presentation/screens/base/base_view_model.dart';
+import 'package:meditrack/presentation/screen/base/base_view_model.dart';
 
 /// Configuration for each exercise field
 class ExerciseFieldConfig {

@@ -1,8 +1,8 @@
 import 'package:meditrack/presentation/providers/local_storage_provider.dart';
-import 'package:meditrack/presentation/screens/base/base_view_model.dart';
+import 'package:meditrack/presentation/screen/base/base_view_model.dart';
 import 'package:meditrack/presentation/common_model/dropdown_value_model.dart';
 
-import '../../base/screen_state.dart';
+import '../../../screen/base/screen_state.dart';
 
 class MyAccountViewModel extends BaseViewModel {
   final AuthState _authState;

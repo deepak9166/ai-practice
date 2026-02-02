@@ -8,7 +8,7 @@ part 'sign_up_response.g.dart';
 ///
 /// Freezed model representing the response from sign-up API.
 @freezed
-class SignUpResponse with _$SignUpResponse {
+abstract class SignUpResponse with _$SignUpResponse {
   const factory SignUpResponse({
     required String token,
     required String refreshToken,

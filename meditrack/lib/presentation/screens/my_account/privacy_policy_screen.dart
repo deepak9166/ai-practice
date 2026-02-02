@@ -6,9 +6,9 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/language_keys.dart';
 import '../../common_widgets/custom_app_bar.dart';
-import '../../screens/base/screen_state_aware.dart';
+import '../../screen/base/screen_state_aware.dart';
 import '../../providers/vm_provider.dart';
-import '../../screens/base/base_consumer_state.dart';
+import '../../screen/base/base_consumer_state.dart';
 import 'view_model/my_account_view_model.dart';
 
 class PrivacyPolicyScreen extends ConsumerStatefulWidget {

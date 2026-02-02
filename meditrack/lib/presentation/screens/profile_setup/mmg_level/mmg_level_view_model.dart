@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 
 import '../../../../config/png_config.dart';
 import '../../../../data/network/dto/response/profile_setup/mmg_level_response.dart';
-import '../../base/base_view_model.dart';
+import '../../../screen/base/base_view_model.dart';
 
 class MmgLevelViewModel extends BaseViewModel {
   List<MMGLevelResponse> mmgLevelList = [

@@ -2,8 +2,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
-import 'package:meditrack/presentation/screens/base/screen_state_aware.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/screen_state_aware.dart';
 
 import '../../../core/constants/language_keys.dart';
 import '../../../core/utils/validators.dart';
@@ -12,7 +12,7 @@ import '../../common_widgets/custom_button.dart';
 import '../../common_widgets/custom_input_field.dart';
 import '../../common_widgets/spacing_widgets.dart';
 import '../../providers/vm_provider.dart';
-import '../base/screen_state.dart';
+import '../../screen/base/screen_state.dart';
 import 'view_model/my_account_view_model.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {

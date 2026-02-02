@@ -7,7 +7,7 @@ part 'sign_up_request.g.dart';
 ///
 /// Freezed model representing the request payload for sign-up API.
 @freezed
-class SignUpRequest with _$SignUpRequest {
+abstract class SignUpRequest with _$SignUpRequest {
   const factory SignUpRequest({
     required String name,
     required String phoneNumber,

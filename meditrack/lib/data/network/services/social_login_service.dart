@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
+// import 'package:firebase_auth/firebase_auth.dart';
+// import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:meditrack/enum/social_user_type.dart';
 
@@ -47,37 +47,40 @@ class GoogleAuthService implements SocialAuthService {
 class FacebookAuthService implements SocialAuthService {
   @override
   Future<SocialUser> signIn() async {
-    final result = await FacebookAuth.instance.login();
+    // final result = await FacebookAuth.instance.login();
+    // final result = await FacebookAuth.instance.login();
 
-    if (result.status != LoginStatus.success) {
-      throw Exception('Facebook login failed');
-    }
+    // if (result.status != LoginStatus.success) {
+    //   throw Exception('Facebook login failed');
+    // }
 
-    final credential = FacebookAuthProvider.credential(
-      result.accessToken!.token,
-    );
+    // final credential = FacebookAuthProvider.credential(
+    //   result.accessToken!.token,
+    // );
 
-    var userObject = await FirebaseAuth.instance.signInWithCredential(
-      credential,
-    );
+    // var userObject = await FirebaseAuth.instance.signInWithCredential(
+    //   credential,
+    // );
 
-    var account = userObject.user;
-    var idToken = (await userObject.user?.getIdToken()) ?? '';
+    // var account = userObject.user;
+    // var idToken = (await userObject.user?.getIdToken()) ?? '';
 
-    return SocialUser(
-      id: account?.uid ?? '',
-      email: account?.email ?? '',
-      name: account?.displayName ?? '',
-      photoUrl: account?.photoURL ?? '',
-      accessToken: userObject.credential?.accessToken ?? '',
-      idToken: idToken,
-      provider: provider,
-    );
+    // return SocialUser(
+    //   id: account?.uid ?? '',
+    //   email: account?.email ?? '',
+    //   name: account?.displayName ?? '',
+    //   photoUrl: account?.photoURL ?? '',
+    //   accessToken: userObject.credential?.accessToken ?? '',
+    //   idToken: idToken,
+    //   provider: provider,
+    // );
+    throw "Not Implemented FB SignIN";
   }
 
   @override
   Future<void> signOut() async {
-    await FacebookAuth.instance.logOut();
+    // await FacebookAuth.instance.logOut();
+    throw "Not Implemented SignOut";
   }
 
   @override

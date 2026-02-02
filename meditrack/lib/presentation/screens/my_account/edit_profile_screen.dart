@@ -12,9 +12,9 @@ import 'package:meditrack/presentation/common_widgets/custom_input_dropdown.dart
 import 'package:meditrack/presentation/common_widgets/custom_input_field.dart';
 import 'package:meditrack/presentation/common_widgets/spacing_widgets.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
-import 'package:meditrack/presentation/screens/base/screen_state.dart';
-import 'package:meditrack/presentation/screens/base/screen_state_aware.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/screen_state.dart';
+import 'package:meditrack/presentation/screen/base/screen_state_aware.dart';
 import 'package:super_tooltip/super_tooltip.dart';
 import 'view_model/my_account_view_model.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/core/constants/app_enums.dart';
 import 'package:meditrack/presentation/screens/add_workout/common_widgets/exercise_set.dart';
-import 'package:meditrack/presentation/screens/base/base_view_model.dart';
+import 'package:meditrack/presentation/screen/base/base_view_model.dart';
 
 class TemplatesViewModel extends BaseViewModel {
   final ValueNotifier<List<double>> mmgValues = ValueNotifier([0.5, 0.5, 0.5]);

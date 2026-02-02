@@ -9,7 +9,7 @@ import 'package:meditrack/presentation/common_widgets/custom_app_bar.dart';
 import 'package:meditrack/presentation/common_widgets/exercise_card.dart';
 import 'package:meditrack/presentation/common_widgets/spacing_widgets.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 import 'package:meditrack/log/app_logs.dart';
 import 'package:meditrack/enum/workout_category_enum.dart';
 import 'package:meditrack/presentation/screens/workout_history/view_model/workout_history_view_model.dart';

@@ -8,8 +8,8 @@ import 'package:meditrack/core/utils/image_picker_utils.dart';
 import 'package:meditrack/log/app_logs.dart';
 import 'package:meditrack/presentation/common_widgets/user_image_upload_bottom_sheet.dart';
 import 'package:meditrack/presentation/common_widgets/visual_progress_picker.dart';
-import 'package:meditrack/presentation/screens/base/base_consumer_state.dart';
-import 'package:meditrack/presentation/screens/base/screen_state_aware.dart';
+import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
+import 'package:meditrack/presentation/screen/base/screen_state_aware.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../core/constants/language_keys.dart';
@@ -19,7 +19,7 @@ import '../../common_widgets/custom_button.dart';
 import '../../common_widgets/custom_input_field.dart';
 import '../../common_widgets/spacing_widgets.dart';
 import '../../providers/vm_provider.dart';
-import '../base/screen_state.dart';
+import '../../screen/base/screen_state.dart';
 import 'view_model/my_account_view_model.dart';
 
 class ContactUsScreen extends ConsumerStatefulWidget {

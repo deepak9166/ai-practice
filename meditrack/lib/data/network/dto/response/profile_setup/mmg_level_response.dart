@@ -7,7 +7,7 @@ part 'mmg_level_response.g.dart';
 ///
 /// Freezed model representing the response from sign-in API.
 @freezed
-class MMGLevelResponse with _$MMGLevelResponse {
+abstract class MMGLevelResponse with _$MMGLevelResponse {
   const factory MMGLevelResponse({
     required String title,
     required String description,

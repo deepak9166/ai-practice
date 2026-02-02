@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:meditrack/presentation/screens/add_workout/view_model/add_workout_viewmodel.dart';
-import 'package:meditrack/presentation/screens/base/base_view_model.dart';
+import 'package:meditrack/presentation/screen/base/base_view_model.dart';
 
 class WorkoutHistoryViewModel extends BaseViewModel {
   final _workoutNameController = TextEditingController();
