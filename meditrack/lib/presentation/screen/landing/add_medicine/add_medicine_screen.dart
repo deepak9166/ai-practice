@@ -54,14 +54,14 @@ class _AddMedicineScreenState
     DropdownValueModel(title: 'Cream / Ointment', value: '7'),
   ];
 
-  List<DropdownValueModel> doseOfMedicine = [
-    DropdownValueModel(title: '1/4', value: '1'),
-    DropdownValueModel(title: '1/3', value: '2'),
-    DropdownValueModel(title: '1/2', value: '3'),
-    DropdownValueModel(title: '1', value: '4'),
-    DropdownValueModel(title: '2', value: '5'),
-    DropdownValueModel(title: '3', value: '6'),
-    DropdownValueModel(title: '4', value: '7'),
+  List<DropdownValueModel<double>> doseOfMedicine = [
+    DropdownValueModel(title: '1/4', value: 0.25),
+    DropdownValueModel(title: '1/3', value: 0.75),
+    DropdownValueModel(title: '1/2', value: 0.50),
+    DropdownValueModel(title: '1', value: 1.0),
+    DropdownValueModel(title: '2', value: 2.0),
+    DropdownValueModel(title: '3', value: 3.0),
+    DropdownValueModel(title: '4', value: 4.0),
   ];
 
   List<DropdownValueModel> dropdownListReepeat = [
@@ -76,7 +76,7 @@ class _AddMedicineScreenState
   List<CheckBoxValueModel> checkValues = [
     CheckBoxValueModel(title: 'Morning', value: false),
     CheckBoxValueModel(title: 'Afternoon', value: false),
-    CheckBoxValueModel(title: 'Evening', value: false)
+    CheckBoxValueModel(title: 'Evening', value: false),
   ];
 
   @override
@@ -116,7 +116,9 @@ class _AddMedicineScreenState
                         child: CustomDropdownInput(
                           hint: "Dose",
                           items: doseOfMedicine,
-                          onChanged: (value) {},
+                          onChanged: (value) {
+                            viewModel.doseTextC = value?.value ?? 0.0;
+                          },
                           value: null,
                         ),
                       ),
@@ -125,7 +127,9 @@ class _AddMedicineScreenState
                         child: CustomDropdownInput(
                           hint: "Type",
                           items: dropdownListMedicineType,
-                          onChanged: (value) {},
+                          onChanged: (value) {
+                            viewModel.typeTextC.text = value?.value ?? '';
+                          },
                           value: null,
                         ),
                       ),
@@ -192,8 +196,7 @@ class _AddMedicineScreenState
                                                   lastDate: DateTime(2101),
                                                 );
                                             if (picked != null) {
-                                              viewModel.startDateTextC.text =
-                                                  '${picked.day}-${picked.month}-${picked.year}';
+                                              viewModel.startDateTextC = picked;
                                             }
                                           },
                                           child: Container(
@@ -213,14 +216,12 @@ class _AddMedicineScreenState
                                               children: [
                                                 Expanded(
                                                   child: Text(
-                                                    viewModel
-                                                            .startDateTextC
-                                                            .text
-                                                            .isNotEmpty
-                                                        ? viewModel
+                                                    viewModel.startDateTextC ==
+                                                            null
+                                                        ? 'Select Date'
+                                                        : viewModel
                                                               .startDateTextC
-                                                              .text
-                                                        : 'Select Date',
+                                                              .toString(),
                                                     style: Theme.of(
                                                       context,
                                                     ).textTheme.bodyMedium,

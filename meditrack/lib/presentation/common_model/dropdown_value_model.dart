@@ -1,6 +1,6 @@
-class DropdownValueModel {
+class DropdownValueModel<T> {
 String title;
-String? value;
+T? value;
 String? icon;
 
 DropdownValueModel({required this.title, this.value, this.icon});

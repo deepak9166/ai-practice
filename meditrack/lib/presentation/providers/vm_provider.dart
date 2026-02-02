@@ -16,6 +16,7 @@ import '../screen/auth/sign_in/sign_in_viewmodel.dart';
 import '../screen/auth/sign_up/sign_up_view_model.dart';
 import '../screen/landing/add_medicine/add_medicine_view_model.dart';
 import '../screen/landing/landing_view_model.dart';
+import '../screen/landing/tab2_medicines/medicines_view_model.dart';
 import '../screens/my_account/view_model/my_account_view_model.dart';
 import 'auth_provider.dart';
 import 'language_provider.dart';
@@ -43,7 +44,12 @@ final signInViewModelProvider = Provider.autoDispose<SignInViewModel>((ref) {
   final authStateService = ref.watch(authStateNotifierProvider.notifier);
   var googleService = GoogleAuthService();
   var facebookAuthService = FacebookAuthService();
-  return SignInViewModel(authRepository, authStateService,googleService,facebookAuthService);
+  return SignInViewModel(
+    authRepository,
+    authStateService,
+    googleService,
+    facebookAuthService,
+  );
 });
 
 /// Sign Up ViewModel Provider
@@ -129,17 +135,19 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   return db;
 });
 
-
-final addMedicineProvider = FutureProvider.family<int, MedicinesCompanion>(
-  (ref, medicine) async {
-    final db = ref.read(databaseProvider);
-    return db.addMedicine(medicine);
-  },
-);
-
-
-final addMedicineVm = Provider.autoDispose<AddMedicineViewModel>((
+final addMedicineProvider = FutureProvider.family<int, MedicinesCompanion>((
   ref,
-) {
-  return AddMedicineViewModel();
+  medicine,
+) async {
+  final db = ref.read(databaseProvider);
+  return db.addMedicine(medicine);
+});
+
+final addMedicineVm = Provider.autoDispose<AddMedicineViewModel>((ref) {
+  final db = ref.read(databaseProvider);
+  return AddMedicineViewModel(db: db);
+}); //AddMedicineViewModel
+final medicineVm = Provider.autoDispose<MedicinesViewModel>((ref) {
+  final db = ref.read(databaseProvider);
+  return MedicinesViewModel(db: db);
 }); //AddMedicineViewModel
