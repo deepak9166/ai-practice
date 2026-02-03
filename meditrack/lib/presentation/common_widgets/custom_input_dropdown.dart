@@ -73,12 +73,16 @@ class _CustomDropdownInputState<T> extends State<CustomDropdownInput<T>> {
               iconOpened: Icon(Icons.keyboard_arrow_up_rounded),
             ),
           ),
+          onChanged: (value) {
+            widget.onChanged(value as T);
+          },
 
           popupProps: PopupPropsMultiSelection.menu(
             fit: FlexFit.loose,
             showSelectedItems: true,
             itemBuilder: (context, item, isDisabled, isSelected) {
               return ListTile(
+               
                 dense: true,
                 // minVerticalPadding: 0,
                 visualDensity: VisualDensity(vertical: -2),

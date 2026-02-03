@@ -26,7 +26,8 @@ import 'safe_execute_provider.dart';
 /// Manages the home screen state of app.
 final homeViewModel = Provider<LandingViewModel>((ref) {
   final authStateService = ref.watch(authStateNotifierProvider);
-  return LandingViewModel(authStateService);
+  final db = ref.read(databaseProvider);
+  return LandingViewModel(authStateObj: authStateService, db: db);
 });
 
 /// Manages the my account screen state of app.
@@ -147,7 +148,16 @@ final addMedicineVm = Provider.autoDispose<AddMedicineViewModel>((ref) {
   final db = ref.read(databaseProvider);
   return AddMedicineViewModel(db: db);
 }); //AddMedicineViewModel
-final medicineVm = Provider.autoDispose<MedicinesViewModel>((ref) {
+final medicineVm = Provider.autoDispose<MedicinesViewModel>((
+  ref
+) {
   final db = ref.read(databaseProvider);
   return MedicinesViewModel(db: db);
+}); //AddMedicineViewModel
+final medicineDetailVm = Provider.autoDispose.family<MedicinesDetailViewModel, int>((
+  ref,
+  id,
+) {
+  final db = ref.read(databaseProvider);
+  return MedicinesDetailViewModel(db: db, medicineId: id);
 }); //AddMedicineViewModel

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:meditrack/extension/keyboard_hide_extesion.dart';
 import 'package:meditrack/presentation/common_widgets/smart_image_view.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
 import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
@@ -21,6 +22,7 @@ import '../../../common_widgets/user_image_upload_bottom_sheet.dart';
 import '../../../common_widgets/visual_profress_viewer.dart';
 import '../../base/screen_state.dart';
 import '../../base/screen_state_aware.dart';
+import '../../med_calculator/med_calculator.dart';
 import 'add_medicine_view_model.dart';
 
 // These cover 90% of real usage:
@@ -44,15 +46,7 @@ class _AddMedicineScreenState
   final _formKey = GlobalKey<FormState>();
   final ValueNotifier<String> _selectedImage = ValueNotifier('');
 
-  List<DropdownValueModel> dropdownListMedicineType = [
-    DropdownValueModel(title: 'Tablet', value: '1'),
-    DropdownValueModel(title: 'Capsule', value: '2'),
-    DropdownValueModel(title: 'Syrup', value: '3'),
-    DropdownValueModel(title: 'Injection', value: '4'),
-    DropdownValueModel(title: 'Drops (eye / ear / nasal)', value: '5'),
-    DropdownValueModel(title: 'Total Reps Per Muscle Group', value: '6'),
-    DropdownValueModel(title: 'Cream / Ointment', value: '7'),
-  ];
+
 
   List<DropdownValueModel<double>> doseOfMedicine = [
     DropdownValueModel(title: '1/4', value: 0.25),
@@ -74,9 +68,7 @@ class _AddMedicineScreenState
   ];
 
   List<CheckBoxValueModel> checkValues = [
-    CheckBoxValueModel(title: 'Morning', value: false),
-    CheckBoxValueModel(title: 'Afternoon', value: false),
-    CheckBoxValueModel(title: 'Evening', value: false),
+    CheckBoxValueModel(title: 'Low stock alert', value: true),
   ];
 
   @override
@@ -110,224 +102,45 @@ class _AddMedicineScreenState
                     hint: 'Enter medicine name',
                   ),
                   VerticalSpacing.medium,
+                  FutureBuilder(
+                    future: viewModel.getAllMedicinesType(),
+                    builder: (context, asyncSnapshot) {
+                      return CustomDropdownInput<DropdownValueModel>(
+                        hint: "Type",
+                        items: asyncSnapshot.data ?? [],
+                        onChanged: (value) {
+                          appLog('type...');
+                         
+                          viewModel.typeTextC = (value?.value ?? 0);
+                        },
+                        value: null,
+                      );
+                    }
+                  ),
+
+                  VerticalSpacing.medium,
                   Row(
                     children: [
                       Expanded(
-                        child: CustomDropdownInput(
-                          hint: "Dose",
-                          items: doseOfMedicine,
-                          onChanged: (value) {
-                            viewModel.doseTextC = value?.value ?? 0.0;
-                          },
-                          value: null,
+                        child: CustomInputField(
+                          hint: "Total quantity",
+                          controller: viewModel.totalQuantity,
+                          keyboardType: TextInputType.number,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: CustomDropdownInput(
-                          hint: "Type",
-                          items: dropdownListMedicineType,
-                          onChanged: (value) {
-                            viewModel.typeTextC.text = value?.value ?? '';
-                          },
-                          value: null,
-                        ),
-                      ),
+                      IconButton(onPressed: () {
+                        _showMedicineCalculator();
+                      }, icon: Icon(Icons.calculate)),
                     ],
                   ),
 
-                  VerticalSpacing.medium,
-
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: ValueListenableBuilder(
-                      valueListenable: viewModel.isSetReminder,
-                      builder: (context, value, child) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            InkWell(
-                              radius: 8,
-                              onTap: () {
-                                viewModel.isSetReminder.value =
-                                    !viewModel.isSetReminder.value;
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSecondaryFixed,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                    horizontal: 10,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SmartImageView(SvgImageId.clockIcon.path),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        !value ? "Remove" : 'Set Reminder',
-                                        style: TextStyle(color: Colors.white),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            if (value == false)
-                              Column(
-                                children: [
-                                  VerticalSpacing.medium,
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: InkWell(
-                                          onTap: () async {
-                                            final DateTime? picked =
-                                                await showDatePicker(
-                                                  context: context,
-                                                  initialDate: DateTime.now(),
-                                                  firstDate: DateTime(2000),
-                                                  lastDate: DateTime(2101),
-                                                );
-                                            if (picked != null) {
-                                              viewModel.startDateTextC = picked;
-                                            }
-                                          },
-                                          child: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 16,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(
-                                                0xFFD0C9EA,
-                                              ).withOpacity(0.4),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    viewModel.startDateTextC ==
-                                                            null
-                                                        ? 'Select Date'
-                                                        : viewModel
-                                                              .startDateTextC
-                                                              .toString(),
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodyMedium,
-                                                  ),
-                                                ),
-                                                SvgPicture.asset(
-                                                  SvgImageId.calendar.path,
-                                                  width: 24,
-                                                  height: 24,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: InkWell(
-                                          onTap: () async {
-                                            final TimeOfDay? picked =
-                                                await showTimePicker(
-                                                  context: context,
-                                                  initialTime: TimeOfDay.now(),
-                                                );
-                                            if (picked != null) {
-                                              viewModel.timeTextC.text = picked
-                                                  .format(context);
-                                            }
-                                          },
-                                          child: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 16,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(
-                                                0xFFD0C9EA,
-                                              ).withOpacity(0.4),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Text(
-                                                    viewModel
-                                                            .timeTextC
-                                                            .text
-                                                            .isNotEmpty
-                                                        ? viewModel
-                                                              .timeTextC
-                                                              .text
-                                                        : 'Select Time',
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodyMedium,
-                                                  ),
-                                                ),
-                                                SvgPicture.asset(
-                                                  SvgImageId.clock.path,
-                                                  width: 24,
-                                                  height: 24,
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  VerticalSpacing.medium,
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'Repeat',
-                                        style: TextTheme.of(
-                                          context,
-                                        ).titleMedium,
-                                      ),
-                                      Spacer(),
-                                      SizedBox(
-                                        width: 200,
-                                        child: CustomDropdownInput(
-                                          hint: "Never",
-                                          items: dropdownListReepeat,
-                                          onChanged: (value) {
-                                            viewModel.frequencyTextC.text =
-                                                value?.value ?? '';
-                                          },
-                                          value: null,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                          ],
-                        );
-                      },
-                    ),
+                  CustomCheckboxList(
+                    data: checkValues,
+                    showOptionRow: true,
+                    onChanged: (value) {
+                      viewModel.isLowAlert = value.value;
+                    },
                   ),
-
-                  VerticalSpacing.medium,
-                  Row(children: [CustomCheckboxList(data: checkValues)]),
-                  VerticalSpacing.medium,
 
                   VisualProgressViewer(
                     height: 80,
@@ -369,11 +182,6 @@ class _AddMedicineScreenState
   }
 
   Future<void> _pickImage() async {
-    // final XFile? image = await pickImage(context);
-    // if (image != null) {
-    // _selectedImage.value = image;
-    // }
-
     showModalBottomSheet(
       context: context,
       builder: (context) => UserImageUploadBottomSheet(
@@ -399,5 +207,20 @@ class _AddMedicineScreenState
   @override
   String screenName() {
     return "Add Medicines";
+  }
+  
+  void _showMedicineCalculator() {
+    showDialog(
+      
+      context: context, builder: (context) => AlertDialog(
+        insetPadding: EdgeInsets.all(0),
+        contentPadding: EdgeInsets.all(0),
+        
+      content: MedCalculator(
+        onDone: (totalMedicne) {
+          viewModel.totalQuantity.text = totalMedicne;
+        },
+      ),
+    ),);
   }
 }

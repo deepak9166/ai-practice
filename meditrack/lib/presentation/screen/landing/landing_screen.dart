@@ -11,7 +11,7 @@ import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 import 'add_medicine/add_medicine_screen.dart';
 import 'landing_view_model.dart';
 import 'tab1_home/home_screen.dart';
-import 'tab2_medicines/medicines_screen.dart';
+import 'tab2_medicines/medicines_list_screen.dart';
 import 'tab3_expenses/expenses_screen.dart';
 import 'tab4_history/history_screen.dart';
 
@@ -61,7 +61,7 @@ class _LandingScreenState
           controller: controller,
           children: const [
             HomeScreen(),
-            MedicinesScreen(),
+            MedicinesListScreen(),
             ExpensesScreen(),
             HistoryScreen(),
             AddMedicineScreen(), // Center plus button screen

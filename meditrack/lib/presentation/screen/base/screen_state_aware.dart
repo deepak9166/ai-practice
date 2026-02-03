@@ -144,7 +144,7 @@ class _ScreenStateAwareState extends ConsumerState<ScreenStateAware>
     super.didUpdateWidget(oldWidget);
 
     // Detect if child changed (parent rebuilt)
-    if (oldWidget.child != widget.child) {
+    if (oldWidget.child != widget.child || oldWidget.state != widget.state) {
       _updateCachedChild(); // Refresh cache when parent rebuilds
     }
 
@@ -199,6 +199,7 @@ class _ScreenStateAwareState extends ConsumerState<ScreenStateAware>
 
   @override
   Widget build(BuildContext context) {
+    print("Render ---");
     super.build(context);
 
     return Stack(

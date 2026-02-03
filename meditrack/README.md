@@ -185,3 +185,4 @@ Tools • Dart `3.10.7` • DevTools `2.51.1`
 MY NOTES
 - hospital medical history docs
 - Garelu upchar tips & custom added notes
+- Water reminder

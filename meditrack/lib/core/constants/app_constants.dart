@@ -83,6 +83,12 @@ class AppConstants {
   static const String routeExerciseList = '/exercise-list';
   static const String routeForgotPassword = '/forgot-password';
   static const String routeForgotPasswordSuccess = '/forgot-password-success';
+  static const String routeMedicineDetail = '/medicine-detail';
+
+
+
+// Med
+
   static const String routeFutureWorkScheduling = '/future-work-scheduling';
   static const String routeWorkoutHistory = '/workout-history';
   static const String routeWorkoutHistoryDetail = '/workout-history-detail';

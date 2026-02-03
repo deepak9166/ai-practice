@@ -1,21 +1,16 @@
 // medicines.dart
 import 'package:drift/drift.dart';
+import 'package:meditrack/data/local/tables/medicine_types.dart';
 
 class Medicines extends Table {
   IntColumn get id => integer().autoIncrement()();
 
   TextColumn get name => text()();
 
-  TextColumn get type => text()(); // Tablet, Syrup
+  IntColumn get typeId => integer().references(MedicinesTypes, #id)();
 
-  RealColumn get dose => real()(); // 1 tablet, 5 ml
+  IntColumn get totalQuantity=> integer()(); // total medicine
 
-  TextColumn get frequency => text()(); // once, twice, custom
+  BoolColumn get lowStockAlert=> boolean()(); // low stock alert
 
-  TextColumn get times =>
-      text()(); // Stored as JSON ["08:00","20:00"]
-
-  DateTimeColumn get startDate => dateTime()();
-
-  DateTimeColumn get endDate => dateTime().nullable()();
 }

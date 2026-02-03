@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../extension/toast_helper.dart';
+import '../../presentation/screen/landing/tab2_medicines/medicine_detail_page.dart';
 import '../../presentation/screens/add_workout/add_workout.dart';
 import '../../presentation/screen/auth/forgot_password/forgot_password_otp_verify.dart';
 import '../../presentation/screen/auth/forgot_password/forgot_password_screen.dart';
@@ -149,6 +150,15 @@ class AppRouter {
         pageBuilder: (context, state) => animatedPage(
           key: state.pageKey,
           child: const ForgotPasswordSuccess(),
+          animationType: AnimationType.slideRight,
+        ),
+      ),
+      GoRoute(
+        path: AppConstants.routeMedicineDetail,
+        name: AppConstants.routeMedicineDetail,
+        pageBuilder: (context, state) => animatedPage(
+          key: state.pageKey,
+          child: MedicineDetailPage(medicineId: ((state.extra ?? 0) as int)),
           animationType: AnimationType.slideRight,
         ),
       ),
@@ -703,8 +713,12 @@ class AppRouter {
   //// Helper methods — now even cleaner! Use [AppConstants.yourRouteName]
   static void go(BuildContext context, String location) => context.go(location);
   //// Helper methods — now even cleaner! Use [AppConstants.yourRouteName]
-  static void push(BuildContext context, String location, {Object? extra}) =>
-      context.push(location, extra: extra);
+  static void push(
+    BuildContext context,
+    String location, {
+    Object? extra,
+    dynamic param,
+  }) => context.push(location, extra: extra);
   //// Helper methods — now even cleaner! Use [AppConstants.yourRouteName]
   static void pushReplacement(BuildContext context, String location) =>
       context.pushReplacement(location);
