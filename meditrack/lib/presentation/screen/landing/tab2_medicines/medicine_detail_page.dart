@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meditrack/core/router/app_router.dart';
+import 'package:meditrack/extension/keyboard_hide_extesion.dart';
+import 'package:meditrack/extension/toast_helper.dart';
 import 'package:meditrack/presentation/common_widgets/custom_button.dart';
 import 'package:meditrack/presentation/common_widgets/smart_image_view.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
@@ -27,15 +29,27 @@ class _MedicineDetailPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Detail')),
+      appBar: AppBar(title: Text('Detail'), 
+      
+      actions: [IconButton(onPressed: () {
+         viewModel.demoNotification();
+      }, icon: Icon(Icons.notification_add))],),
       floatingActionButton: ValueListenableBuilder(
         valueListenable: viewModel.isSetReminder,
         builder: (context, value, child) {
           return FloatingActionButton(
+            tooltip: "Set Alarm",
+            elevation: 5,
+
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(50),
+            ),
             onPressed: () {
               _showReminderBottomSheet();
+             
             },
-            child: SmartImageView(SvgImageId.clockIcon.path),
+            backgroundColor: Colors.black,
+            child: Icon(CupertinoIcons.alarm_fill, color: Colors.white),
           );
         },
       ),
@@ -50,22 +64,24 @@ class _MedicineDetailPageState
             VerticalSpacing.medium,
             Divider(),
             Text("Logs:"),
-            StreamBuilder(
-              stream: viewModel.fetchLogs(),
-              builder: (context, snapshot) {
-                var data = snapshot.data ?? [];
-                return ListView.builder(
-                  physics: NeverScrollableScrollPhysics(),
-                  shrinkWrap: true,
-                  itemCount: data.length,
-                  itemBuilder: (context, index) {
-                    var item = data[index];
-                    return ListTile(
-                      title: Text(item.intakeTime.toIso8601String()),
-                    );
-                  },
-                );
-              },
+            Expanded(
+              child: StreamBuilder(
+                stream: viewModel.fetchLogs(),
+                builder: (context, snapshot) {
+                  var data = snapshot.data ?? [];
+                  return ListView.builder(
+                    physics: NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    itemCount: data.length,
+                    itemBuilder: (context, index) {
+                      var item = data[index];
+                      return ListTile(
+                        title: Text(item.intakeTime.toIso8601String()),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
@@ -175,6 +191,7 @@ class _ReminderSetupViewState extends State<ReminderSetupView> {
                         textColor: Theme.of(context).primaryColor,
                         onPressed: () {
                           widget.viewModel.selectedValue = null;
+                          context.hideKeyboard();
                           AppRouter.pop(context);
                         },
                         text: 'Cancel',
@@ -184,7 +201,12 @@ class _ReminderSetupViewState extends State<ReminderSetupView> {
                     Expanded(
                       child: CustomButton(
                         onPressed: () {
+                          if (selectedValue?.value == null) {
+                            context.showWarning('Select Reminder');
+                            return;
+                          }
                           widget.onUpdate(selectedDate, selectedValue?.value);
+                          context.hideKeyboard();
                           AppRouter.pop(context);
                         },
                         text: 'DONE',

@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import '../../../../config/app_config.dart';
-import '../../../../log/app_logs.dart';
+import '../../../config/app_config.dart';
+import '../../../log/app_logs.dart';
 
 /// Logging Interceptor
 ///

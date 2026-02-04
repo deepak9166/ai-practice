@@ -126,7 +126,7 @@ Future<Medicine?> getMedicineDetail(int id) {
       into(intakeHistories).insert(data);
 
 
-        Stream<List<IntakeHistory>> watchAllLogs() => select(intakeHistories).watch();
+        Stream<List<IntakeHistory>> watchAllLogs(int medicineId) =>  (select(intakeHistories)..where((e) => e.medicineId.equals(medicineId))).watch(); //select(intakeHistories).watch();
 
 }
 

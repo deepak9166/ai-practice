@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
-import '../../../config/app_config.dart';
-import '../../../core/constants/app_constants.dart';
-import 'interceptors/auth_interceptor.dart';
-import 'interceptors/logging_interceptor.dart';
-import 'interceptors/error_interceptor.dart';
+import '../../config/app_config.dart';
+import '../constants/app_constants.dart';
+import '../../data/network/interceptors/auth_interceptor.dart';
+import '../../data/network/interceptors/logging_interceptor.dart';
+import '../../data/network/interceptors/error_interceptor.dart';
 
 /// API Service
 ///

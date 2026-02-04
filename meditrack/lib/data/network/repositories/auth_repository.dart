@@ -7,7 +7,7 @@ import '../dto/request/auth/sign_in/sign_in_request.dart';
 import '../dto/response/auth/sign_in/sign_in_response.dart';
 import '../dto/request/auth/sign_up/sign_up_request.dart';
 import '../dto/response/auth/sign_up/sign_up_response.dart';
-import '../services/api_service.dart';
+import '../../../core/service/api_service.dart';
 
 /// Auth Repository
 ///

@@ -7,7 +7,8 @@ import 'package:meditrack/firebase_options.dart';
 import 'config/app_config.dart' show AppConfig, AppEnvironment;
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
-import 'data/network/services/api_service.dart';
+import 'core/service/api_service.dart';
+import 'core/service/timezone_service.dart';
 import 'presentation/providers/theme_provider.dart';
 import 'presentation/providers/vm_provider.dart';
 
@@ -35,7 +36,10 @@ void main() async {
   await _initializeRotation();
 
   // Firebase Setup
-  _firebaseSetup();
+  await _firebaseSetup();
+
+  // Timezone setup
+  await TimeZoneHelper.init();
 
   runApp(
     EasyLocalization(

@@ -8,8 +8,9 @@ import 'package:meditrack/presentation/screens/work_scheduling/view_model/schedu
 import 'package:meditrack/presentation/screens/workout_history/view_model/workout_history_view_model.dart';
 import 'package:meditrack/presentation/screens/templates/view_model/templates_viewmodel.dart';
 
+import '../../core/service/notification_service.dart';
 import '../../data/local/app_database.dart';
-import '../../data/network/services/social_login_service.dart';
+import '../../core/service/social_login_service.dart';
 import '../../enum/filter_enum.dart';
 import '../screen/auth/forgot_password/forgot_password_view_model.dart';
 import '../screen/auth/sign_in/sign_in_viewmodel.dart';
@@ -148,16 +149,23 @@ final addMedicineVm = Provider.autoDispose<AddMedicineViewModel>((ref) {
   final db = ref.read(databaseProvider);
   return AddMedicineViewModel(db: db);
 }); //AddMedicineViewModel
-final medicineVm = Provider.autoDispose<MedicinesViewModel>((
-  ref
-) {
+final medicineVm = Provider.autoDispose<MedicinesViewModel>((ref) {
   final db = ref.read(databaseProvider);
   return MedicinesViewModel(db: db);
 }); //AddMedicineViewModel
-final medicineDetailVm = Provider.autoDispose.family<MedicinesDetailViewModel, int>((
-  ref,
-  id,
-) {
-  final db = ref.read(databaseProvider);
-  return MedicinesDetailViewModel(db: db, medicineId: id);
-}); //AddMedicineViewModel
+final medicineDetailVm = Provider.autoDispose
+    .family<MedicinesDetailViewModel, int>((ref, id) {
+      final db = ref.read(databaseProvider);
+      final notificationService = ref.read(notificationServiceProvider);
+      return MedicinesDetailViewModel(
+        db: db,
+        medicineId: id,
+        notificationService: notificationService,
+      );
+    }); //AddMedicineViewModel
+
+final notificationServiceProvider = Provider<LocalNotificationService>((ref) {
+  final service = LocalNotificationService.instance;
+  service.init();
+  return service;
+});

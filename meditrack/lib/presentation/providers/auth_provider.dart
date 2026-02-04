@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
 import '../../data/network/repositories/auth_repository.dart';
-import '../../data/network/services/api_service.dart';
+import '../../core/service/api_service.dart';
 import 'local_storage_provider.dart';
 
 /// Auth Repository Provider

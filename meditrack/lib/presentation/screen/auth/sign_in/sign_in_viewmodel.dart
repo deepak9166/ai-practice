@@ -7,7 +7,7 @@ import '../../../../core/router/app_router.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../data/network/dto/request/auth/sign_in/sign_in_request.dart';
 import '../../../../data/network/repositories/auth_repository.dart';
-import '../../../../data/network/services/social_login_service.dart';
+import '../../../../core/service/social_login_service.dart';
 import '../../base/base_view_model.dart';
 
 /// Sign In ViewModel

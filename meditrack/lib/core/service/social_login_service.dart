@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:meditrack/enum/social_user_type.dart';
 
-import '../../../firebase_options.dart';
+import '../../firebase_options.dart';
 
 class GoogleAuthService implements SocialAuthService {
   late final GoogleSignIn _googleSignIn;

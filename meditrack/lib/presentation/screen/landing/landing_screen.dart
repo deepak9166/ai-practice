@@ -53,7 +53,8 @@ class _LandingScreenState
     return Scaffold(
       extendBodyBehindAppBar: true,
       extendBody: true,
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
+      
       body: SafeArea(
         top: false,
         child: PageView(

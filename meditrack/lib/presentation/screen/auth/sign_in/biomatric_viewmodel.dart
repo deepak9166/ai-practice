@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../data/network/services/bio_matric_service.dart';
+import '../../../../core/service/bio_matric_service.dart';
 import '../../../../enum/bio_matric_enum.dart';
 
 typedef Reader = T Function<T>(ProviderListenable<T> provider);

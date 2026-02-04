@@ -4,8 +4,10 @@ import 'package:meditrack/extension/toast_helper.dart';
 import 'package:meditrack/log/app_logs.dart';
 import 'package:meditrack/presentation/screen/base/base_view_model.dart';
 
+import '../../../../core/service/notification_service.dart';
 import '../../../common_model/dropdown_value_model.dart';
 import '../../base/screen_state.dart';
+import 'hepler/medicine_remider_time.dart';
 
 class MedicinesViewModel extends BaseViewModel {
   final AppDatabase db;
@@ -27,7 +29,12 @@ class MedicinesViewModel extends BaseViewModel {
 class MedicinesDetailViewModel extends BaseViewModel {
   final AppDatabase db;
   final int medicineId;
-  MedicinesDetailViewModel({required this.db, required this.medicineId}) {
+  final LocalNotificationService notificationService;
+  MedicinesDetailViewModel({
+    required this.db,
+    required this.medicineId,
+    required this.notificationService,
+  }) {
     fetchMedicineDetail(medicineId);
   }
 
@@ -58,22 +65,63 @@ class MedicinesDetailViewModel extends BaseViewModel {
     changeScreenState(ScreenState.content);
   }
 
-  Future<void> addReminder(DateTime selectedDate, int repeatedValue, BuildContext context) async {
+  Future<void> addReminder(
+    DateTime selectedDate,
+    int repeatedValue,
+    BuildContext context,
+  ) async {
+    var isSetAlarm = await setNotification(selectedDate, medicineId);
+
+    if (isSetAlarm == false) {
+      context.showError('Reminder Setup failed!');
+      return;
+    }
     var data = IntakeHistoriesCompanion.insert(
       medicineId: medicineId,
       intakeTime: selectedDate,
       repeatType: repeatedValue,
       status: "Upcoming",
     );
-    await db.logIntake(data);
 
+    await db.logIntake(data);
     appLog('Reminder Set Successfully!');
     context.showSuccess('Reminder Set Successfully!');
-
   }
 
-  Stream<List<IntakeHistory>> fetchLogs()  {
+  Future<bool> setNotification(DateTime time, int medicineId) async {
+    try {
+      final notificationId = NotificationIdHelper.generate(
+        medicineId: medicineId,
+        selectedTime: time,
+      );
 
-  return  db.watchAllLogs();
+      if (time.isBefore(DateTime.now())) {
+        debugPrint('❌ DateTime is in the past');
+        return false;
+      }
+
+      await notificationService.scheduleMedicineReminder(
+        id: notificationId,
+        title: 'Medicine Reminder 💊',
+        body: 'Time to take ${medicineDetail?.name}',
+        dateTime: time,
+        payload: medicineId.toString(),
+      );
+
+      appLog('💊 Reminder set on $time');
+
+      return true;
+    } catch (e) {
+      appLog("Error on set notification $e");
+      return false;
+    }
+  }
+
+  void demoNotification() {
+    notificationService.showNotificationInApp();
+  }
+
+  Stream<List<IntakeHistory>> fetchLogs() {
+    return db.watchAllLogs(medicineId);
   }
 }
