@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meditrack/core/extensions/date_extensions.dart';
 import 'package:meditrack/core/router/app_router.dart';
 import 'package:meditrack/extension/keyboard_hide_extesion.dart';
 import 'package:meditrack/extension/toast_helper.dart';
@@ -76,7 +77,7 @@ class _MedicineDetailPageState
                     itemBuilder: (context, index) {
                       var item = data[index];
                       return ListTile(
-                        title: Text(item.intakeTime.toIso8601String()),
+                        title: Text(item.intakeTime.toReadableDateTime()),
                       );
                     },
                   );
