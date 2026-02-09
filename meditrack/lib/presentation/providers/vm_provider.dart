@@ -16,7 +16,9 @@ import '../screen/auth/forgot_password/forgot_password_view_model.dart';
 import '../screen/auth/sign_in/sign_in_viewmodel.dart';
 import '../screen/auth/sign_up/sign_up_view_model.dart';
 import '../screen/landing/add_medicine/add_medicine_view_model.dart';
+import '../screen/landing/add_medicine/update_medicine_view_model.dart';
 import '../screen/landing/landing_view_model.dart';
+import '../screen/landing/tab1_home/home_view_model.dart';
 import '../screen/landing/tab2_medicines/medicines_view_model.dart';
 import '../screens/my_account/view_model/my_account_view_model.dart';
 import 'auth_provider.dart';
@@ -148,7 +150,14 @@ final addMedicineProvider = FutureProvider.family<int, MedicinesCompanion>((
 final addMedicineVm = Provider.autoDispose<AddMedicineViewModel>((ref) {
   final db = ref.read(databaseProvider);
   return AddMedicineViewModel(db: db);
-}); //AddMedicineViewModel
+});
+
+final updateMedicineVm = Provider.autoDispose
+    .family<UpdateMedicineViewModel, int>((ref, medicineId) {
+      final db = ref.read(databaseProvider);
+      return UpdateMedicineViewModel(db: db, medicineId: medicineId);
+    });
+
 final medicineVm = Provider.autoDispose<MedicinesViewModel>((ref) {
   final db = ref.read(databaseProvider);
   return MedicinesViewModel(db: db);
@@ -168,4 +177,9 @@ final notificationServiceProvider = Provider<LocalNotificationService>((ref) {
   final service = LocalNotificationService.instance;
   service.init();
   return service;
+});
+
+final homeVm = Provider.autoDispose<HomeViewModel>((ref) {
+  final db = ref.read(databaseProvider);
+  return HomeViewModel(db: db);
 });

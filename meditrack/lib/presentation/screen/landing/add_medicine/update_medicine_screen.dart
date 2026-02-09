@@ -1,91 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:meditrack/core/router/app_router.dart';
-import 'package:meditrack/extension/keyboard_hide_extesion.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
 import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 
-import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/image_picker_utils.dart';
 import '../../../../extension/sage_execute_extesion.dart';
 import '../../../../log/app_logs.dart';
-import '../../../common_model/action_button.dart';
 import '../../../common_model/checkbox_value_model.dart';
 import '../../../common_model/dropdown_value_model.dart';
 import '../../../common_widgets/custom_button.dart';
 import '../../../common_widgets/custom_checkbox_list.dart';
 import '../../../common_widgets/custom_input_dropdown.dart';
 import '../../../common_widgets/custom_input_field.dart';
-import '../../../common_widgets/custom_textfield_autofill.dart';
 import '../../../common_widgets/spacing_widgets.dart';
 import '../../../common_widgets/user_image_upload_bottom_sheet.dart';
 import '../../../common_widgets/visual_profress_viewer.dart';
 import '../../base/screen_state.dart';
 import '../../base/screen_state_aware.dart';
 import '../../med_calculator/med_calculator.dart';
-import 'add_medicine_view_model.dart';
+import 'update_medicine_view_model.dart';
 
-// These cover 90% of real usage:
-// Tablet
-// Capsule
-// Syrup
-// Injection
-// Drops (eye / ear / nasal)
-// Cream / Ointment
+class UpdateMedicineScreen extends ConsumerStatefulWidget {
+  final int medicineId;
 
-class AddMedicineScreen extends ConsumerStatefulWidget {
-  const AddMedicineScreen({super.key});
+  const UpdateMedicineScreen({super.key, required this.medicineId});
 
   @override
-  ConsumerState<AddMedicineScreen> createState() => _AddMedicineScreenState();
+  ConsumerState<UpdateMedicineScreen> createState() =>
+      _UpdateMedicineScreenState();
 }
 
-class _AddMedicineScreenState
-    extends BaseConsumerState<AddMedicineScreen, AddMedicineViewModel>
+class _UpdateMedicineScreenState
+    extends BaseConsumerState<UpdateMedicineScreen, UpdateMedicineViewModel>
     with ImagePickerUtils {
   final _formKey = GlobalKey<FormState>();
   final ValueNotifier<String> _selectedImage = ValueNotifier('');
 
-  List<DropdownValueModel<double>> doseOfMedicine = [
-    DropdownValueModel(title: '1/4', value: 0.25),
-    DropdownValueModel(title: '1/3', value: 0.75),
-    DropdownValueModel(title: '1/2', value: 0.50),
-    DropdownValueModel(title: '1', value: 1.0),
-    DropdownValueModel(title: '2', value: 2.0),
-    DropdownValueModel(title: '3', value: 3.0),
-    DropdownValueModel(title: '4', value: 4.0),
-  ];
-
-  List<DropdownValueModel> dropdownListReepeat = [
-    DropdownValueModel(title: 'Never', value: '1'),
-    DropdownValueModel(title: 'Every Day', value: '2'),
-    DropdownValueModel(title: 'Monday to Friday', value: '3'),
-    DropdownValueModel(title: 'Every Week', value: '4'),
-    DropdownValueModel(title: 'Every Month', value: '5'),
-    DropdownValueModel(title: 'Every Year', value: '6'),
-  ];
-
   List<CheckBoxValueModel> get checkValues => [
-    CheckBoxValueModel(title: 'Low stock alert', value: viewModel.isLowAlert),
-  ];
+        CheckBoxValueModel(title: 'Low stock alert', value: viewModel.isLowAlert),
+      ];
+
+  @override
+  void onModelReady(UpdateMedicineViewModel model) {
+    super.onModelReady(model);
+    model.loadMedicine().then((_) => setState(() {}));
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Medicine'),
-        actions: [
-          ActionButtonAppBar(
-            title: 'Finish',
-            onPressed: () {
-              appLog('finish tapped');
-            },
-          ),
-          SizedBox(width: 20),
-        ],
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      appBar: AppBar(title: Text('Update Medicine')),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: SafeArea(
@@ -96,42 +60,28 @@ class _AddMedicineScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CustomTextfieldAutofill(
-                    hintText: 'Enter Medicine name',
-                    fetchSuggestions: (query) =>
-                        viewModel.fetchMedicines(query),
+                  CustomInputField(
+                    hint: 'Medicine name',
                     controller: viewModel.medicineNameTextC,
-                    onItemSelected: (value) async {
-                      final id = await viewModel.getMedicineIdByName(value);
-                      if (id == null || !mounted) return;
-                      AppRouter.push(
-                        context,
-                        AppConstants.routeMedicineDetail,
-                        extra: id,
-                      );
-                      viewModel.clearForm();
-                      _formKey.currentState?.reset();
-                      context.hideKeyboard();
-                    },
                   ),
-
                   VerticalSpacing.medium,
                   FutureBuilder<List<DropdownValueModel<int>>>(
-                    future: viewModel.getAllMedicinesType().then(
-                      (list) => list.cast<DropdownValueModel<int>>(),
-                    ),
+                    future: viewModel
+                        .getAllMedicinesType()
+                        .then((list) => list.cast<DropdownValueModel<int>>()),
                     builder: (context, asyncSnapshot) {
                       return CustomDropdownInput<DropdownValueModel<int>>(
                         hint: "Type",
                         items: asyncSnapshot.data ?? [],
-                        value: null,
+                        value: viewModel.selectedType,
                         onChanged: (value) {
                           viewModel.typeTextC = value?.value;
+                          viewModel.selectedType = value;
+                          setState(() {});
                         },
                       );
                     },
                   ),
-
                   VerticalSpacing.medium,
                   Row(
                     children: [
@@ -143,14 +93,11 @@ class _AddMedicineScreenState
                         ),
                       ),
                       IconButton(
-                        onPressed: () {
-                          _showMedicineCalculator();
-                        },
+                        onPressed: _showMedicineCalculator,
                         icon: Icon(Icons.calculate),
                       ),
                     ],
                   ),
-
                   CustomCheckboxList(
                     data: checkValues,
                     showOptionRow: true,
@@ -159,7 +106,6 @@ class _AddMedicineScreenState
                       setState(() {});
                     },
                   ),
-
                   VisualProgressViewer(
                     height: 80,
                     title: 'Select Medicine Image (Optional)',
@@ -168,7 +114,6 @@ class _AddMedicineScreenState
                     imageNotifier: _selectedImage,
                     onPickImage: () => _pickImage(),
                     onRemove: () {
-                      appLog('removed images');
                       _selectedImage.value = "";
                     },
                   ),
@@ -179,15 +124,14 @@ class _AddMedicineScreenState
                     builder: (context) => CustomButton(
                       onPressed: () {
                         ref.safeExecute(
-                          key: "save_medicine",
+                          key: "update_medicine",
                           action: () => viewModel.saveMedicine(context),
                         );
                       },
-                      text: 'ADD MEDICINE',
+                      text: 'UPDATE MEDICINE',
                       backgroundColor: Colors.black,
                       isLoading:
-                          viewModel.screenState.value ==
-                          ScreenState.apiProgress,
+                          viewModel.screenState.value == ScreenState.apiProgress,
                     ),
                   ),
                 ],
@@ -204,7 +148,7 @@ class _AddMedicineScreenState
       context: context,
       builder: (context) => UserImageUploadBottomSheet(
         onUpload: (imageUrl, _) {
-          appLog('Image URL: $imageUrl, MSG Level: ');
+          appLog('Image URL: $imageUrl');
           _selectedImage.value = imageUrl;
         },
       ),
@@ -218,14 +162,12 @@ class _AddMedicineScreenState
   }
 
   @override
-  AddMedicineViewModel createViewModel() {
-    return ref.read(addMedicineVm);
+  UpdateMedicineViewModel createViewModel() {
+    return ref.read(updateMedicineVm(widget.medicineId));
   }
 
   @override
-  String screenName() {
-    return "Add Medicines";
-  }
+  String screenName() => "Update Medicine";
 
   void _showMedicineCalculator() {
     showDialog(
@@ -233,10 +175,9 @@ class _AddMedicineScreenState
       builder: (context) => AlertDialog(
         insetPadding: EdgeInsets.all(0),
         contentPadding: EdgeInsets.all(0),
-
         content: MedCalculator(
-          onDone: (totalMedicne) {
-            viewModel.totalQuantity.text = totalMedicne;
+          onDone: (totalMedicine) {
+            viewModel.totalQuantity.text = totalMedicine;
           },
         ),
       ),

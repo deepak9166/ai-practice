@@ -10,29 +10,29 @@ import 'package:meditrack/presentation/common_widgets/status_label_widget.dart';
 import '../common_model/exercise_model.dart';
 import 'preview_images.dart';
 
-enum ExeciseCardType { small, medium, normal, bestPerformDay }
+enum MedicineCardType { small, medium, normal, bestPerformDay }
 
-class ExerciseCard extends StatelessWidget {
-  final ExerciseModel item;
+class MedicineCard extends StatelessWidget {
+  final MedicineModel item;
   final Function()? onAction;
   final void Function(Offset details)? onTopBtnTapped;
   final String? buttonIcon;
-  final ExeciseCardType cardType;
-  const ExerciseCard({
+  final MedicineCardType cardType;
+  const MedicineCard({
     super.key,
     required this.item,
     this.onAction,
     this.onTopBtnTapped,
     this.buttonIcon,
-    this.cardType = ExeciseCardType.normal,
+    this.cardType = MedicineCardType.normal,
   });
 
   @override
   Widget build(BuildContext context) {
-    bool isMediumCard = ExeciseCardType.medium == cardType;
-    bool isSmallCard = ExeciseCardType.small == cardType;
-    bool isNormalCard = ExeciseCardType.normal == cardType;
-    bool isBestPerformOfDay = ExeciseCardType.bestPerformDay == cardType;
+    bool isMediumCard = MedicineCardType.medium == cardType;
+    bool isSmallCard = MedicineCardType.small == cardType;
+    bool isNormalCard = MedicineCardType.normal == cardType;
+    bool isBestPerformOfDay = MedicineCardType.bestPerformDay == cardType;
 
     if (isSmallCard) {
       return Container(
@@ -61,7 +61,7 @@ class ExerciseCard extends StatelessWidget {
                     width: 44,
                   ),
                   Text(
-                    'Best Performance Day of\nThis Month',
+                    'Best Alarm Day of\nThis Month',
                     style: Theme.of(context).textTheme.titleSmall
                         ?.copyWith(fontSize: 18)
                         .copyWith(
@@ -116,7 +116,7 @@ class ExerciseCard extends StatelessWidget {
                     ),
                     SizedBox(width: 5),
                     Text(
-                      item.date.toShortDayMonth(), //'Sun, Dec 7'
+                      item.date.toShortWithTime(), //'Sun, Dec 7'
                       style: Theme.of(context).textTheme.bodyMedium
                           ?.copyWith(fontSize: 12)
                           .copyWith(
@@ -137,7 +137,7 @@ class ExerciseCard extends StatelessWidget {
                     SizedBox(width: 5),
                     Flexible(
                       child: Text(
-                        item.msgNames,
+                        item.type,
                         style: Theme.of(context).textTheme.bodyMedium
                             ?.copyWith(fontSize: 12)
                             .copyWith(
@@ -156,9 +156,7 @@ class ExerciseCard extends StatelessWidget {
               height: 20,
               child: Row(
                 children: [
-                  SizedBox(
-                    child: PreviewImages(size: 19, images: item.previewImages),
-                  ),
+                  SizedBox(child: PreviewImages(size: 19, images: [])),
                   Spacer(),
                   InkWell(
                     borderRadius: BorderRadius.circular(8),
@@ -291,7 +289,7 @@ class ExerciseCard extends StatelessWidget {
                 ),
                 SizedBox(width: 5),
                 Text(
-                  item.date.toShortDayMonth(), //'Sun, Dec 7'
+                  item.date.toShortWithTime(), //'Sun, Dec 7'
                   style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(fontSize: 12)
                       .copyWith(
@@ -302,7 +300,7 @@ class ExerciseCard extends StatelessWidget {
                 SmartImageView(SvgImageId.goalIcon.path, height: 16, width: 16),
                 SizedBox(width: 5),
                 Text(
-                  item.msgNames,
+                  item.type,
                   style: Theme.of(context).textTheme.bodyMedium
                       ?.copyWith(fontSize: 12)
                       .copyWith(
@@ -340,7 +338,7 @@ class ExerciseCard extends StatelessWidget {
                             ),
                             SizedBox(width: 2),
                             Text(
-                              'Start workout',
+                              'Mark as Taken',
                               style: Theme.of(context).textTheme.labelMedium
                                   ?.copyWith(
                                     color: Theme.of(
@@ -364,12 +362,7 @@ class ExerciseCard extends StatelessWidget {
                 height: (isNormalCard && onAction == null) ? 0 : 20,
                 child: Row(
                   children: [
-                    SizedBox(
-                      child: PreviewImages(
-                        size: 19,
-                        images: item.previewImages,
-                      ),
-                    ),
+                    SizedBox(child: PreviewImages(size: 19, images: [])),
                     Spacer(),
                     InkWell(
                       borderRadius: BorderRadius.circular(8),

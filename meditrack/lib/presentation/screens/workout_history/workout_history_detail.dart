@@ -5,7 +5,7 @@ import 'package:meditrack/core/theme/app_theme.dart';
 import 'package:meditrack/core/utils/image_picker_utils.dart';
 import 'package:meditrack/presentation/common_model/exercise_model.dart';
 import 'package:meditrack/presentation/common_widgets/custom_app_bar.dart';
-import 'package:meditrack/presentation/common_widgets/exercise_card.dart';
+import 'package:meditrack/presentation/common_widgets/medicine_card.dart';
 import 'package:meditrack/presentation/common_widgets/spacing_widgets.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
 import 'package:meditrack/presentation/screens/add_workout/common_widgets/exercise_set.dart';
@@ -33,10 +33,7 @@ class _WorkoutHistoryDetailState
   Widget build(BuildContext context) {
     final workoutHistoryViewModel = ref.read(workoutHistoryViewModelProvider);
     return Scaffold(
-      appBar: CustomAppBar(
-        hideLeading: true,
-        title: 'Detail',
-        actions: [
+      appBar: CustomAppBar(hideLeading: true, title: 'Detail', actions: [
         
         ],
       ),
@@ -50,15 +47,15 @@ class _WorkoutHistoryDetailState
                   horizontal: 20,
                   vertical: 10,
                 ),
-                child: ExerciseCard(
-                  item: ExerciseModel(
+                child: MedicineCard(
+                  item: MedicineModel(
                     date: DateTime.now().toIso8601String(),
-                    msgNames: 'Chest, Arms, Shoulders',
+                    type: 'Chest, Arms, Shoulders',
                     name: 'Upper Body Strength',
-                    previewImages: [],
+                    // previewImages: [],
                     status: '',
                   ),
-                  cardType: ExeciseCardType.normal,
+                  cardType: MedicineCardType.normal,
                   // onAction: () {
                   //   appLog('Add navigation for Open full detail');
                   //   AppRouter.push(

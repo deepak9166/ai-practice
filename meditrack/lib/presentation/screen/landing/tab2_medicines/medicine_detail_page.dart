@@ -2,16 +2,17 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meditrack/core/extensions/date_extensions.dart';
+import 'package:meditrack/core/constants/app_constants.dart';
 import 'package:meditrack/core/router/app_router.dart';
+import 'package:meditrack/data/local/app_database.dart';
 import 'package:meditrack/extension/keyboard_hide_extesion.dart';
 import 'package:meditrack/extension/toast_helper.dart';
 import 'package:meditrack/presentation/common_widgets/custom_button.dart';
-import 'package:meditrack/presentation/common_widgets/smart_image_view.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
 import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 import 'package:meditrack/presentation/screen/base/screen_state_aware.dart';
+import 'package:meditrack/presentation/screen/landing/tab2_medicines/remaning_medicine_counts.dart';
 
-import '../../../../config/svg_config.dart';
 import '../../../common_model/dropdown_value_model.dart';
 import '../../../common_widgets/custom_input_dropdown.dart';
 import '../../../common_widgets/spacing_widgets.dart';
@@ -30,25 +31,43 @@ class _MedicineDetailPageState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Detail'), 
-      
-      actions: [IconButton(onPressed: () {
-         viewModel.demoNotification();
-      }, icon: Icon(Icons.notification_add))],),
+      appBar: AppBar(
+        title: Text('Detail'),
+        actions: [
+          IconButton(
+            onPressed: () {
+              AppRouter.push(
+                context,
+                AppConstants.routeUpdateMedicine,
+                extra: widget.medicineId,
+              );
+            },
+            icon: Icon(Icons.edit),
+            tooltip: 'Update',
+          ),
+          IconButton(
+            onPressed: () {
+              AppRouter.push(
+                context,
+                AppConstants.routeMedicineExpenses,
+                extra: widget.medicineId,
+              );
+            },
+            icon: Icon(Icons.add),
+            tooltip: 'Expenses',
+          ),
+        ],
+      ),
       floatingActionButton: ValueListenableBuilder(
         valueListenable: viewModel.isSetReminder,
         builder: (context, value, child) {
           return FloatingActionButton(
             tooltip: "Set Alarm",
             elevation: 5,
-
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(50),
             ),
-            onPressed: () {
-              _showReminderBottomSheet();
-             
-            },
+            onPressed: () => _showReminderBottomSheet(),
             backgroundColor: Colors.black,
             child: Icon(CupertinoIcons.alarm_fill, color: Colors.white),
           );
@@ -56,35 +75,42 @@ class _MedicineDetailPageState
       ),
       body: ScreenStateAware(
         state: viewModel.screenState,
-        builder: (context) => Column(
-          children: [
-            Text("Medicine : ${viewModel.medicineDetail?.name}"),
+        builder: (context) => SingleChildScrollView(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                "Medicine : ${viewModel.medicineDetail?.name}",
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              VerticalSpacing.medium,
 
-            VerticalSpacing.medium,
-            // Row(children: [CustomCheckboxList(data: checkValues)]),
-            VerticalSpacing.medium,
-            Divider(),
-            Text("Logs:"),
-            Expanded(
-              child: StreamBuilder(
+              RemainingMedicineCounts(medicineId: widget.medicineId),
+              Divider(),
+              Text(
+                "Alarms Logs:",
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              VerticalSpacing.small,
+              StreamBuilder<List<IntakeHistory>>(
                 stream: viewModel.fetchLogs(),
                 builder: (context, snapshot) {
                   var data = snapshot.data ?? [];
-                  return ListView.builder(
-                    physics: NeverScrollableScrollPhysics(),
-                    shrinkWrap: true,
-                    itemCount: data.length,
-                    itemBuilder: (context, index) {
-                      var item = data[index];
-                      return ListTile(
-                        title: Text(item.intakeTime.toReadableDateTime()),
-                      );
-                    },
+                  return Column(
+                    children: data
+                        .map(
+                          (item) => ListTile(
+                            dense: true,
+                            title: Text(item.intakeTime.toReadableDateTime()),
+                          ),
+                        )
+                        .toList(),
                   );
                 },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -105,12 +131,17 @@ class _MedicineDetailPageState
       backgroundColor: Colors.transparent,
       useSafeArea: true,
       context: context,
+      isScrollControlled: true,
       builder: (contextdd) {
         return ReminderSetupView(
           viewModel: viewModel,
-          onUpdate: (selectedDate, repeatedValue) {
-            // appLog('Selected value ${selectedDate}. ${repeatedValue}');
-            viewModel.addReminder(selectedDate, repeatedValue, context);
+          onUpdate: (selectedDate, repeatedValue, doseValue) {
+            viewModel.addReminder(
+              selectedDate,
+              repeatedValue,
+              context,
+              doseValue: doseValue,
+            );
           },
         );
       },
@@ -120,7 +151,12 @@ class _MedicineDetailPageState
 
 class ReminderSetupView extends StatefulWidget {
   final MedicinesDetailViewModel viewModel;
-  final Function(DateTime selectedDate, int repeatedValue) onUpdate;
+  final void Function(
+    DateTime selectedDate,
+    int repeatedValue,
+    double? doseValue,
+  )
+  onUpdate;
   const ReminderSetupView({
     super.key,
     required this.viewModel,
@@ -161,8 +197,23 @@ class _ReminderSetupViewState extends State<ReminderSetupView> {
                     },
                   ),
                 ),
-
-                // VerticalSpacing.medium,
+                VerticalSpacing.small,
+                FutureBuilder<List<DropdownValueModel<double>>>(
+                  future: widget.viewModel.fetchDose(),
+                  builder: (context, snapshot) {
+                    var doseItems = snapshot.data ?? [];
+                    return CustomDropdownInput<DropdownValueModel<double>>(
+                      label: "Dose",
+                      hint: "Select dose",
+                      items: doseItems,
+                      onChanged: (value) {
+                        setState(() => selectedDose = value);
+                      },
+                      value: selectedDose,
+                    );
+                  },
+                ),
+                VerticalSpacing.small,
                 FutureBuilder(
                   future: widget.viewModel.fetchRepeat(),
                   builder: (context, snapshot) {
@@ -173,7 +224,7 @@ class _ReminderSetupViewState extends State<ReminderSetupView> {
                         hint: "Select Repeat Reminder",
                         items: data,
                         onChanged: (value) {
-                          selectedValue = value;
+                          setState(() => selectedValue = value);
                         },
                         value: selectedValue,
                       ),
@@ -206,7 +257,12 @@ class _ReminderSetupViewState extends State<ReminderSetupView> {
                             context.showWarning('Select Reminder');
                             return;
                           }
-                          widget.onUpdate(selectedDate, selectedValue?.value);
+                          final dose = selectedDose?.value;
+                          widget.onUpdate(
+                            selectedDate,
+                            selectedValue!.value as int,
+                            dose,
+                          );
                           context.hideKeyboard();
                           AppRouter.pop(context);
                         },
@@ -225,4 +281,5 @@ class _ReminderSetupViewState extends State<ReminderSetupView> {
 
   DateTime selectedDate = DateTime.now();
   DropdownValueModel? selectedValue;
+  DropdownValueModel<double>? selectedDose;
 }

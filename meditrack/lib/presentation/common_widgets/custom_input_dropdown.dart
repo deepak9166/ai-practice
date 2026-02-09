@@ -64,6 +64,9 @@ class _CustomDropdownInputState<T> extends State<CustomDropdownInput<T>> {
 
         /// Dropdown plugin
         DropdownSearch<DropdownValueModel>(
+          selectedItem: widget.value != null
+              ? (widget.value as DropdownValueModel)
+              : null,
           items: (filter, t) =>
               widget.items.map((e) => (e as DropdownValueModel)).toList(),
           suffixProps: DropdownSuffixProps(

@@ -6,7 +6,7 @@ import 'package:meditrack/core/constants/app_constants.dart';
 import 'package:meditrack/core/router/app_router.dart';
 import 'package:meditrack/presentation/common_model/exercise_model.dart';
 import 'package:meditrack/presentation/common_widgets/custom_app_bar.dart';
-import 'package:meditrack/presentation/common_widgets/exercise_card.dart';
+import 'package:meditrack/presentation/common_widgets/medicine_card.dart';
 import 'package:meditrack/presentation/common_widgets/spacing_widgets.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
 import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
@@ -50,19 +50,19 @@ class _WorkoutHistoryState
           },
           itemBuilder: (context, index) {
             final exercise = exercises[index];
-            return ExerciseCard(
-              item: ExerciseModel(
+            return MedicineCard(
+              item: MedicineModel(
                 date: DateTime.now().toIso8601String(),
-                msgNames: 'Chest, Arms, Shoulders',
+                type: 'Chest, Arms, Shoulders',
                 name: exercise,
-                previewImages: [
-                  PngImageId.yoga.path,
-                  PngImageId.yoga.path,
-                  PngImageId.yoga.path,
-                ],
+                // previewImages: [
+                //   PngImageId.yoga.path,
+                //   PngImageId.yoga.path,
+                //   PngImageId.yoga.path,
+                // ],
                 status: '',
               ),
-              cardType: ExeciseCardType.normal,
+              cardType: MedicineCardType.normal,
               buttonIcon: SvgImageId.edit.path,
               onTopBtnTapped: (offset) {
                 appLog('edit actions recieved');

@@ -13,4 +13,6 @@ class IntakeHistories extends Table {
   IntColumn get repeatType => integer().references(MedicinesRepeat, #id)();
 
   TextColumn get status => text()(); // Taken / Missed/ Upcoming
+
+  RealColumn get doseValue => real().nullable()(); // dose units to deduct from stock when taken
 }

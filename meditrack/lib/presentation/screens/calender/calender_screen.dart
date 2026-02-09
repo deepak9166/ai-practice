@@ -11,7 +11,7 @@ import '../../../config/png_config.dart';
 import '../../../config/svg_config.dart';
 import '../../../log/app_logs.dart';
 import '../../common_model/exercise_model.dart';
-import '../../common_widgets/exercise_card.dart';
+import '../../common_widgets/medicine_card.dart';
 import '../../common_widgets/smart_image_view.dart';
 import '../../providers/vm_provider.dart';
 
@@ -39,58 +39,59 @@ class _CalenderViewState extends ConsumerState<CalenderScreen> {
   @override
   Widget build(BuildContext context) {
     final local = ref.watch(languageProvider);
+    List<MedicineModel> exerciseData = [];
+    // List<MedicineModel> exerciseData = [
+    //   MedicineModel(
+    //     date: DateTime.now().toIso8601String(),
+    //     type: 'Chest, Arms, Shoulders',
+    //     status: 'pending',
+    //     name: 'Upper Body Strength',
+    //     previewImages: [
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //     ],
+    //   ),
+    //   MedicineModel(
+    //     date: DateTime.now().subtract(Duration(days: -1)).toIso8601String(),
+    //     type: 'Chest, Arms, Shoulders',
+    //     status: 'complated',
+    //     name: 'Upper Body Strength',
+    //     previewImages: [
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //     ],
+    //   ),
+    //   MedicineModel(
+    //     date: DateTime.now().subtract(Duration(days: -2)).toIso8601String(),
+    //     type: 'Chest, Arms, Shoulders',
+    //     status: 'notlog',
+    //     name: 'Upper Body Strength',
+    //     previewImages: [
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //     ],
+    //   ),
+    //   MedicineModel(
+    //     date: DateTime.now().subtract(Duration(days: -3)).toIso8601String(),
+    //     type: 'Chest, Arms, Shoulders',
+    //     status: 'notlog',
+    //     name: 'Upper Body Strength',
+    //     isBestPerformOfDay: true,
+    //     previewImages: [
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //       PngImageId.yoga.path,
+    //     ],
+    //   ),
+    // ];
 
-    List<ExerciseModel> exerciseData = [
-      ExerciseModel(
-        date: DateTime.now().toIso8601String(),
-        msgNames: 'Chest, Arms, Shoulders',
-        status: 'pending',
-        name: 'Upper Body Strength',
-        previewImages: [
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-        ],
-      ),
-      ExerciseModel(
-        date: DateTime.now().subtract(Duration(days: -1)).toIso8601String(),
-        msgNames: 'Chest, Arms, Shoulders',
-        status: 'complated',
-        name: 'Upper Body Strength',
-        previewImages: [
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-        ],
-      ),
-      ExerciseModel(
-        date: DateTime.now().subtract(Duration(days: -2)).toIso8601String(),
-        msgNames: 'Chest, Arms, Shoulders',
-        status: 'notlog',
-        name: 'Upper Body Strength',
-        previewImages: [
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-        ],
-      ),
-      ExerciseModel(
-        date: DateTime.now().subtract(Duration(days: -3)).toIso8601String(),
-        msgNames: 'Chest, Arms, Shoulders',
-        status: 'notlog',
-        name: 'Upper Body Strength',
-        isBestPerformOfDay: true,
-        previewImages: [
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-          PngImageId.yoga.path,
-        ],
-      ),
-    ];
     return Scaffold(
       appBar: AppBar(
         title: Text('Calender'),
@@ -115,20 +116,24 @@ class _CalenderViewState extends ConsumerState<CalenderScreen> {
                 var item = exerciseData[index];
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: ExerciseCard(
+                  child: MedicineCard(
                     item: item,
-                    cardType: item.isBestPerformOfDay == true
-                        ? ExeciseCardType.bestPerformDay
-                        : ExeciseCardType.normal,
-                        onAction: () {
-                          if(item.isBestPerformOfDay == true){
-                            appLog('Navigae to summary page');
-                            AppRouter.push(context, AppConstants.routeWorkoutSummaryCompleted);
-                          }else {
-                            appLog('Navigae to detail page');
-                            AppRouter.push(context, AppConstants.routeWorkoutSummary);
-                          }
-                        },
+                    cardType: MedicineCardType.normal,
+                    onAction: () {
+                      // if (item.isBestPerformOfDay == true) {
+                      //   appLog('Navigae to summary page');
+                      //   AppRouter.push(
+                      //     context,
+                      //     AppConstants.routeWorkoutSummaryCompleted,
+                      //   );
+                      // } else {
+                      //   appLog('Navigae to detail page');
+                      //   AppRouter.push(
+                      //     context,
+                      //     AppConstants.routeWorkoutSummary,
+                      //   );
+                      // }
+                    },
                   ),
                 );
               },
@@ -162,8 +167,7 @@ class _CalenderViewState extends ConsumerState<CalenderScreen> {
         availableCalendarFormats: const {
           CalendarFormat.month: 'Monthly',
           CalendarFormat.week: 'Weekly',
-           CalendarFormat.twoWeeks: 'Year',
-
+          CalendarFormat.twoWeeks: 'Year',
         },
         headerStyle: const HeaderStyle(
           headerPadding: EdgeInsets.all(0),

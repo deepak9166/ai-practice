@@ -84,6 +84,8 @@ class AppConstants {
   static const String routeForgotPassword = '/forgot-password';
   static const String routeForgotPasswordSuccess = '/forgot-password-success';
   static const String routeMedicineDetail = '/medicine-detail';
+  static const String routeUpdateMedicine = '/update-medicine';
+  static const String routeMedicineExpenses = '/medicine-expenses';
 
 
 

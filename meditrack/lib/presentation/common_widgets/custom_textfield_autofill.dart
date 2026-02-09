@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 class CustomTextfieldAutofill extends StatefulWidget {
@@ -23,22 +25,36 @@ class _CustomTextfieldAutofillState extends State<CustomTextfieldAutofill> {
   final FocusNode _focusNode = FocusNode();
   List<String> _suggestions = [];
   bool _isLoading = false;
+  Timer? _debounce;
+  String _lastQuery = '';
 
-  Future<void> _onTextChanged(String value) async {
-    if (value.isEmpty) {
-      setState(() => _suggestions = []);
+  static const _debounceDuration = Duration(milliseconds: 300);
+
+  void _onTextChanged(String value) {
+    final query = value.trim();
+    if (query.isEmpty) {
+      _debounce?.cancel();
+      setState(() {
+        _suggestions = [];
+        _isLoading = false;
+      });
       return;
     }
 
+    _debounce?.cancel();
     setState(() => _isLoading = true);
 
-    final results = await widget.fetchSuggestions(value);
+    _debounce = Timer(_debounceDuration, () async {
+      _lastQuery = query;
+      final results = await widget.fetchSuggestions(query);
 
-    if (!mounted) return;
+      if (!mounted) return;
+      if (_lastQuery != query) return;
 
-    setState(() {
-      _suggestions = results;
-      _isLoading = false;
+      setState(() {
+        _isLoading = false;
+        _suggestions = results;
+      });
     });
   }
 
@@ -47,7 +63,9 @@ class _CustomTextfieldAutofillState extends State<CustomTextfieldAutofill> {
     return Autocomplete<String>(
       textEditingController: widget.controller,
       focusNode: _focusNode,
-      optionsBuilder: (value) {
+      optionsBuilder: (textEditingValue) {
+        final text = textEditingValue.text;
+        if (text.isEmpty) return const Iterable<String>.empty();
         return _suggestions;
       },
       onSelected: widget.onItemSelected,
@@ -68,9 +86,7 @@ class _CustomTextfieldAutofillState extends State<CustomTextfieldAutofill> {
                     ),
                   )
                 : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       },
@@ -79,6 +95,7 @@ class _CustomTextfieldAutofillState extends State<CustomTextfieldAutofill> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _focusNode.dispose();
     super.dispose();
   }

@@ -1055,334 +1055,6 @@ class MedicinesRepeatCompanion extends UpdateCompanion<MedicinesRepeatData> {
   }
 }
 
-class $StocksTable extends Stocks with TableInfo<$StocksTable, Stock> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $StocksTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _medicineIdMeta = const VerificationMeta(
-    'medicineId',
-  );
-  @override
-  late final GeneratedColumn<int> medicineId = GeneratedColumn<int>(
-    'medicine_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES medicines (id)',
-    ),
-  );
-  static const VerificationMeta _totalQuantityMeta = const VerificationMeta(
-    'totalQuantity',
-  );
-  @override
-  late final GeneratedColumn<int> totalQuantity = GeneratedColumn<int>(
-    'total_quantity',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _remainingQuantityMeta = const VerificationMeta(
-    'remainingQuantity',
-  );
-  @override
-  late final GeneratedColumn<int> remainingQuantity = GeneratedColumn<int>(
-    'remaining_quantity',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _lowStockThresholdMeta = const VerificationMeta(
-    'lowStockThreshold',
-  );
-  @override
-  late final GeneratedColumn<int> lowStockThreshold = GeneratedColumn<int>(
-    'low_stock_threshold',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(5),
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    medicineId,
-    totalQuantity,
-    remainingQuantity,
-    lowStockThreshold,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'stocks';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<Stock> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('medicine_id')) {
-      context.handle(
-        _medicineIdMeta,
-        medicineId.isAcceptableOrUnknown(data['medicine_id']!, _medicineIdMeta),
-      );
-    }
-    if (data.containsKey('total_quantity')) {
-      context.handle(
-        _totalQuantityMeta,
-        totalQuantity.isAcceptableOrUnknown(
-          data['total_quantity']!,
-          _totalQuantityMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_totalQuantityMeta);
-    }
-    if (data.containsKey('remaining_quantity')) {
-      context.handle(
-        _remainingQuantityMeta,
-        remainingQuantity.isAcceptableOrUnknown(
-          data['remaining_quantity']!,
-          _remainingQuantityMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_remainingQuantityMeta);
-    }
-    if (data.containsKey('low_stock_threshold')) {
-      context.handle(
-        _lowStockThresholdMeta,
-        lowStockThreshold.isAcceptableOrUnknown(
-          data['low_stock_threshold']!,
-          _lowStockThresholdMeta,
-        ),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {medicineId};
-  @override
-  Stock map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return Stock(
-      medicineId: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}medicine_id'],
-      )!,
-      totalQuantity: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}total_quantity'],
-      )!,
-      remainingQuantity: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}remaining_quantity'],
-      )!,
-      lowStockThreshold: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}low_stock_threshold'],
-      )!,
-    );
-  }
-
-  @override
-  $StocksTable createAlias(String alias) {
-    return $StocksTable(attachedDatabase, alias);
-  }
-}
-
-class Stock extends DataClass implements Insertable<Stock> {
-  final int medicineId;
-  final int totalQuantity;
-  final int remainingQuantity;
-  final int lowStockThreshold;
-  const Stock({
-    required this.medicineId,
-    required this.totalQuantity,
-    required this.remainingQuantity,
-    required this.lowStockThreshold,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['medicine_id'] = Variable<int>(medicineId);
-    map['total_quantity'] = Variable<int>(totalQuantity);
-    map['remaining_quantity'] = Variable<int>(remainingQuantity);
-    map['low_stock_threshold'] = Variable<int>(lowStockThreshold);
-    return map;
-  }
-
-  StocksCompanion toCompanion(bool nullToAbsent) {
-    return StocksCompanion(
-      medicineId: Value(medicineId),
-      totalQuantity: Value(totalQuantity),
-      remainingQuantity: Value(remainingQuantity),
-      lowStockThreshold: Value(lowStockThreshold),
-    );
-  }
-
-  factory Stock.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return Stock(
-      medicineId: serializer.fromJson<int>(json['medicineId']),
-      totalQuantity: serializer.fromJson<int>(json['totalQuantity']),
-      remainingQuantity: serializer.fromJson<int>(json['remainingQuantity']),
-      lowStockThreshold: serializer.fromJson<int>(json['lowStockThreshold']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'medicineId': serializer.toJson<int>(medicineId),
-      'totalQuantity': serializer.toJson<int>(totalQuantity),
-      'remainingQuantity': serializer.toJson<int>(remainingQuantity),
-      'lowStockThreshold': serializer.toJson<int>(lowStockThreshold),
-    };
-  }
-
-  Stock copyWith({
-    int? medicineId,
-    int? totalQuantity,
-    int? remainingQuantity,
-    int? lowStockThreshold,
-  }) => Stock(
-    medicineId: medicineId ?? this.medicineId,
-    totalQuantity: totalQuantity ?? this.totalQuantity,
-    remainingQuantity: remainingQuantity ?? this.remainingQuantity,
-    lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
-  );
-  Stock copyWithCompanion(StocksCompanion data) {
-    return Stock(
-      medicineId: data.medicineId.present
-          ? data.medicineId.value
-          : this.medicineId,
-      totalQuantity: data.totalQuantity.present
-          ? data.totalQuantity.value
-          : this.totalQuantity,
-      remainingQuantity: data.remainingQuantity.present
-          ? data.remainingQuantity.value
-          : this.remainingQuantity,
-      lowStockThreshold: data.lowStockThreshold.present
-          ? data.lowStockThreshold.value
-          : this.lowStockThreshold,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('Stock(')
-          ..write('medicineId: $medicineId, ')
-          ..write('totalQuantity: $totalQuantity, ')
-          ..write('remainingQuantity: $remainingQuantity, ')
-          ..write('lowStockThreshold: $lowStockThreshold')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    medicineId,
-    totalQuantity,
-    remainingQuantity,
-    lowStockThreshold,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Stock &&
-          other.medicineId == this.medicineId &&
-          other.totalQuantity == this.totalQuantity &&
-          other.remainingQuantity == this.remainingQuantity &&
-          other.lowStockThreshold == this.lowStockThreshold);
-}
-
-class StocksCompanion extends UpdateCompanion<Stock> {
-  final Value<int> medicineId;
-  final Value<int> totalQuantity;
-  final Value<int> remainingQuantity;
-  final Value<int> lowStockThreshold;
-  const StocksCompanion({
-    this.medicineId = const Value.absent(),
-    this.totalQuantity = const Value.absent(),
-    this.remainingQuantity = const Value.absent(),
-    this.lowStockThreshold = const Value.absent(),
-  });
-  StocksCompanion.insert({
-    this.medicineId = const Value.absent(),
-    required int totalQuantity,
-    required int remainingQuantity,
-    this.lowStockThreshold = const Value.absent(),
-  }) : totalQuantity = Value(totalQuantity),
-       remainingQuantity = Value(remainingQuantity);
-  static Insertable<Stock> custom({
-    Expression<int>? medicineId,
-    Expression<int>? totalQuantity,
-    Expression<int>? remainingQuantity,
-    Expression<int>? lowStockThreshold,
-  }) {
-    return RawValuesInsertable({
-      if (medicineId != null) 'medicine_id': medicineId,
-      if (totalQuantity != null) 'total_quantity': totalQuantity,
-      if (remainingQuantity != null) 'remaining_quantity': remainingQuantity,
-      if (lowStockThreshold != null) 'low_stock_threshold': lowStockThreshold,
-    });
-  }
-
-  StocksCompanion copyWith({
-    Value<int>? medicineId,
-    Value<int>? totalQuantity,
-    Value<int>? remainingQuantity,
-    Value<int>? lowStockThreshold,
-  }) {
-    return StocksCompanion(
-      medicineId: medicineId ?? this.medicineId,
-      totalQuantity: totalQuantity ?? this.totalQuantity,
-      remainingQuantity: remainingQuantity ?? this.remainingQuantity,
-      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (medicineId.present) {
-      map['medicine_id'] = Variable<int>(medicineId.value);
-    }
-    if (totalQuantity.present) {
-      map['total_quantity'] = Variable<int>(totalQuantity.value);
-    }
-    if (remainingQuantity.present) {
-      map['remaining_quantity'] = Variable<int>(remainingQuantity.value);
-    }
-    if (lowStockThreshold.present) {
-      map['low_stock_threshold'] = Variable<int>(lowStockThreshold.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('StocksCompanion(')
-          ..write('medicineId: $medicineId, ')
-          ..write('totalQuantity: $totalQuantity, ')
-          ..write('remainingQuantity: $remainingQuantity, ')
-          ..write('lowStockThreshold: $lowStockThreshold')
-          ..write(')'))
-        .toString();
-  }
-}
-
 class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -1875,6 +1547,17 @@ class $IntakeHistoriesTable extends IntakeHistories
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _doseValueMeta = const VerificationMeta(
+    'doseValue',
+  );
+  @override
+  late final GeneratedColumn<double> doseValue = GeneratedColumn<double>(
+    'dose_value',
+    aliasedName,
+    true,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1882,6 +1565,7 @@ class $IntakeHistoriesTable extends IntakeHistories
     intakeTime,
     repeatType,
     status,
+    doseValue,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1930,6 +1614,12 @@ class $IntakeHistoriesTable extends IntakeHistories
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
+    if (data.containsKey('dose_value')) {
+      context.handle(
+        _doseValueMeta,
+        doseValue.isAcceptableOrUnknown(data['dose_value']!, _doseValueMeta),
+      );
+    }
     return context;
   }
 
@@ -1959,6 +1649,10 @@ class $IntakeHistoriesTable extends IntakeHistories
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
+      doseValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}dose_value'],
+      ),
     );
   }
 
@@ -1974,12 +1668,14 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
   final DateTime intakeTime;
   final int repeatType;
   final String status;
+  final double? doseValue;
   const IntakeHistory({
     required this.id,
     required this.medicineId,
     required this.intakeTime,
     required this.repeatType,
     required this.status,
+    this.doseValue,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1989,6 +1685,9 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
     map['intake_time'] = Variable<DateTime>(intakeTime);
     map['repeat_type'] = Variable<int>(repeatType);
     map['status'] = Variable<String>(status);
+    if (!nullToAbsent || doseValue != null) {
+      map['dose_value'] = Variable<double>(doseValue);
+    }
     return map;
   }
 
@@ -1999,6 +1698,9 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
       intakeTime: Value(intakeTime),
       repeatType: Value(repeatType),
       status: Value(status),
+      doseValue: doseValue == null && nullToAbsent
+          ? const Value.absent()
+          : Value(doseValue),
     );
   }
 
@@ -2013,6 +1715,7 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
       intakeTime: serializer.fromJson<DateTime>(json['intakeTime']),
       repeatType: serializer.fromJson<int>(json['repeatType']),
       status: serializer.fromJson<String>(json['status']),
+      doseValue: serializer.fromJson<double?>(json['doseValue']),
     );
   }
   @override
@@ -2024,6 +1727,7 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
       'intakeTime': serializer.toJson<DateTime>(intakeTime),
       'repeatType': serializer.toJson<int>(repeatType),
       'status': serializer.toJson<String>(status),
+      'doseValue': serializer.toJson<double?>(doseValue),
     };
   }
 
@@ -2033,12 +1737,14 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
     DateTime? intakeTime,
     int? repeatType,
     String? status,
+    Value<double?> doseValue = const Value.absent(),
   }) => IntakeHistory(
     id: id ?? this.id,
     medicineId: medicineId ?? this.medicineId,
     intakeTime: intakeTime ?? this.intakeTime,
     repeatType: repeatType ?? this.repeatType,
     status: status ?? this.status,
+    doseValue: doseValue.present ? doseValue.value : this.doseValue,
   );
   IntakeHistory copyWithCompanion(IntakeHistoriesCompanion data) {
     return IntakeHistory(
@@ -2053,6 +1759,7 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
           ? data.repeatType.value
           : this.repeatType,
       status: data.status.present ? data.status.value : this.status,
+      doseValue: data.doseValue.present ? data.doseValue.value : this.doseValue,
     );
   }
 
@@ -2063,14 +1770,15 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
           ..write('medicineId: $medicineId, ')
           ..write('intakeTime: $intakeTime, ')
           ..write('repeatType: $repeatType, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('doseValue: $doseValue')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(id, medicineId, intakeTime, repeatType, status);
+      Object.hash(id, medicineId, intakeTime, repeatType, status, doseValue);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2079,7 +1787,8 @@ class IntakeHistory extends DataClass implements Insertable<IntakeHistory> {
           other.medicineId == this.medicineId &&
           other.intakeTime == this.intakeTime &&
           other.repeatType == this.repeatType &&
-          other.status == this.status);
+          other.status == this.status &&
+          other.doseValue == this.doseValue);
 }
 
 class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
@@ -2088,12 +1797,14 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
   final Value<DateTime> intakeTime;
   final Value<int> repeatType;
   final Value<String> status;
+  final Value<double?> doseValue;
   const IntakeHistoriesCompanion({
     this.id = const Value.absent(),
     this.medicineId = const Value.absent(),
     this.intakeTime = const Value.absent(),
     this.repeatType = const Value.absent(),
     this.status = const Value.absent(),
+    this.doseValue = const Value.absent(),
   });
   IntakeHistoriesCompanion.insert({
     this.id = const Value.absent(),
@@ -2101,6 +1812,7 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
     required DateTime intakeTime,
     required int repeatType,
     required String status,
+    this.doseValue = const Value.absent(),
   }) : medicineId = Value(medicineId),
        intakeTime = Value(intakeTime),
        repeatType = Value(repeatType),
@@ -2111,6 +1823,7 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
     Expression<DateTime>? intakeTime,
     Expression<int>? repeatType,
     Expression<String>? status,
+    Expression<double>? doseValue,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2118,6 +1831,7 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
       if (intakeTime != null) 'intake_time': intakeTime,
       if (repeatType != null) 'repeat_type': repeatType,
       if (status != null) 'status': status,
+      if (doseValue != null) 'dose_value': doseValue,
     });
   }
 
@@ -2127,6 +1841,7 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
     Value<DateTime>? intakeTime,
     Value<int>? repeatType,
     Value<String>? status,
+    Value<double?>? doseValue,
   }) {
     return IntakeHistoriesCompanion(
       id: id ?? this.id,
@@ -2134,6 +1849,7 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
       intakeTime: intakeTime ?? this.intakeTime,
       repeatType: repeatType ?? this.repeatType,
       status: status ?? this.status,
+      doseValue: doseValue ?? this.doseValue,
     );
   }
 
@@ -2155,6 +1871,9 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
+    if (doseValue.present) {
+      map['dose_value'] = Variable<double>(doseValue.value);
+    }
     return map;
   }
 
@@ -2165,7 +1884,8 @@ class IntakeHistoriesCompanion extends UpdateCompanion<IntakeHistory> {
           ..write('medicineId: $medicineId, ')
           ..write('intakeTime: $intakeTime, ')
           ..write('repeatType: $repeatType, ')
-          ..write('status: $status')
+          ..write('status: $status, ')
+          ..write('doseValue: $doseValue')
           ..write(')'))
         .toString();
   }
@@ -2180,7 +1900,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $MedicinesRepeatTable medicinesRepeat = $MedicinesRepeatTable(
     this,
   );
-  late final $StocksTable stocks = $StocksTable(this);
   late final $ExpensesTable expenses = $ExpensesTable(this);
   late final $IntakeHistoriesTable intakeHistories = $IntakeHistoriesTable(
     this,
@@ -2194,7 +1913,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     medicines,
     medicinesDose,
     medicinesRepeat,
-    stocks,
     expenses,
     intakeHistories,
   ];
@@ -2470,25 +2188,6 @@ final class $$MedicinesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$StocksTable, List<Stock>> _stocksRefsTable(
-    _$AppDatabase db,
-  ) => MultiTypedResultKey.fromTable(
-    db.stocks,
-    aliasName: $_aliasNameGenerator(db.medicines.id, db.stocks.medicineId),
-  );
-
-  $$StocksTableProcessedTableManager get stocksRefs {
-    final manager = $$StocksTableTableManager(
-      $_db,
-      $_db.stocks,
-    ).filter((f) => f.medicineId.id.sqlEquals($_itemColumn<int>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_stocksRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
   static MultiTypedResultKey<$ExpensesTable, List<Expense>> _expensesRefsTable(
     _$AppDatabase db,
   ) => MultiTypedResultKey.fromTable(
@@ -2582,31 +2281,6 @@ class $$MedicinesTableFilterComposer
           ),
     );
     return composer;
-  }
-
-  Expression<bool> stocksRefs(
-    Expression<bool> Function($$StocksTableFilterComposer f) f,
-  ) {
-    final $$StocksTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stocks,
-      getReferencedColumn: (t) => t.medicineId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StocksTableFilterComposer(
-            $db: $db,
-            $table: $db.stocks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
   }
 
   Expression<bool> expensesRefs(
@@ -2761,31 +2435,6 @@ class $$MedicinesTableAnnotationComposer
     return composer;
   }
 
-  Expression<T> stocksRefs<T extends Object>(
-    Expression<T> Function($$StocksTableAnnotationComposer a) f,
-  ) {
-    final $$StocksTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.stocks,
-      getReferencedColumn: (t) => t.medicineId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$StocksTableAnnotationComposer(
-            $db: $db,
-            $table: $db.stocks,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> expensesRefs<T extends Object>(
     Expression<T> Function($$ExpensesTableAnnotationComposer a) f,
   ) {
@@ -2852,7 +2501,6 @@ class $$MedicinesTableTableManager
           Medicine,
           PrefetchHooks Function({
             bool typeId,
-            bool stocksRefs,
             bool expensesRefs,
             bool intakeHistoriesRefs,
           })
@@ -2907,14 +2555,12 @@ class $$MedicinesTableTableManager
           prefetchHooksCallback:
               ({
                 typeId = false,
-                stocksRefs = false,
                 expensesRefs = false,
                 intakeHistoriesRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
-                    if (stocksRefs) db.stocks,
                     if (expensesRefs) db.expenses,
                     if (intakeHistoriesRefs) db.intakeHistories,
                   ],
@@ -2952,27 +2598,6 @@ class $$MedicinesTableTableManager
                       },
                   getPrefetchedDataCallback: (items) async {
                     return [
-                      if (stocksRefs)
-                        await $_getPrefetchedData<
-                          Medicine,
-                          $MedicinesTable,
-                          Stock
-                        >(
-                          currentTable: table,
-                          referencedTable: $$MedicinesTableReferences
-                              ._stocksRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$MedicinesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).stocksRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.medicineId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
                       if (expensesRefs)
                         await $_getPrefetchedData<
                           Medicine,
@@ -3037,7 +2662,6 @@ typedef $$MedicinesTableProcessedTableManager =
       Medicine,
       PrefetchHooks Function({
         bool typeId,
-        bool stocksRefs,
         bool expensesRefs,
         bool intakeHistoriesRefs,
       })
@@ -3473,302 +3097,6 @@ typedef $$MedicinesRepeatTableProcessedTableManager =
       MedicinesRepeatData,
       PrefetchHooks Function({bool intakeHistoriesRefs})
     >;
-typedef $$StocksTableCreateCompanionBuilder =
-    StocksCompanion Function({
-      Value<int> medicineId,
-      required int totalQuantity,
-      required int remainingQuantity,
-      Value<int> lowStockThreshold,
-    });
-typedef $$StocksTableUpdateCompanionBuilder =
-    StocksCompanion Function({
-      Value<int> medicineId,
-      Value<int> totalQuantity,
-      Value<int> remainingQuantity,
-      Value<int> lowStockThreshold,
-    });
-
-final class $$StocksTableReferences
-    extends BaseReferences<_$AppDatabase, $StocksTable, Stock> {
-  $$StocksTableReferences(super.$_db, super.$_table, super.$_typedResult);
-
-  static $MedicinesTable _medicineIdTable(_$AppDatabase db) => db.medicines
-      .createAlias($_aliasNameGenerator(db.stocks.medicineId, db.medicines.id));
-
-  $$MedicinesTableProcessedTableManager get medicineId {
-    final $_column = $_itemColumn<int>('medicine_id')!;
-
-    final manager = $$MedicinesTableTableManager(
-      $_db,
-      $_db.medicines,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_medicineIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$StocksTableFilterComposer
-    extends Composer<_$AppDatabase, $StocksTable> {
-  $$StocksTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<int> get totalQuantity => $composableBuilder(
-    column: $table.totalQuantity,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get remainingQuantity => $composableBuilder(
-    column: $table.remainingQuantity,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get lowStockThreshold => $composableBuilder(
-    column: $table.lowStockThreshold,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$MedicinesTableFilterComposer get medicineId {
-    final $$MedicinesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.medicineId,
-      referencedTable: $db.medicines,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$MedicinesTableFilterComposer(
-            $db: $db,
-            $table: $db.medicines,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StocksTableOrderingComposer
-    extends Composer<_$AppDatabase, $StocksTable> {
-  $$StocksTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<int> get totalQuantity => $composableBuilder(
-    column: $table.totalQuantity,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get remainingQuantity => $composableBuilder(
-    column: $table.remainingQuantity,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get lowStockThreshold => $composableBuilder(
-    column: $table.lowStockThreshold,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$MedicinesTableOrderingComposer get medicineId {
-    final $$MedicinesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.medicineId,
-      referencedTable: $db.medicines,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$MedicinesTableOrderingComposer(
-            $db: $db,
-            $table: $db.medicines,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StocksTableAnnotationComposer
-    extends Composer<_$AppDatabase, $StocksTable> {
-  $$StocksTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<int> get totalQuantity => $composableBuilder(
-    column: $table.totalQuantity,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get remainingQuantity => $composableBuilder(
-    column: $table.remainingQuantity,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get lowStockThreshold => $composableBuilder(
-    column: $table.lowStockThreshold,
-    builder: (column) => column,
-  );
-
-  $$MedicinesTableAnnotationComposer get medicineId {
-    final $$MedicinesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.medicineId,
-      referencedTable: $db.medicines,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$MedicinesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.medicines,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$StocksTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $StocksTable,
-          Stock,
-          $$StocksTableFilterComposer,
-          $$StocksTableOrderingComposer,
-          $$StocksTableAnnotationComposer,
-          $$StocksTableCreateCompanionBuilder,
-          $$StocksTableUpdateCompanionBuilder,
-          (Stock, $$StocksTableReferences),
-          Stock,
-          PrefetchHooks Function({bool medicineId})
-        > {
-  $$StocksTableTableManager(_$AppDatabase db, $StocksTable table)
-    : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$StocksTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$StocksTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$StocksTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<int> medicineId = const Value.absent(),
-                Value<int> totalQuantity = const Value.absent(),
-                Value<int> remainingQuantity = const Value.absent(),
-                Value<int> lowStockThreshold = const Value.absent(),
-              }) => StocksCompanion(
-                medicineId: medicineId,
-                totalQuantity: totalQuantity,
-                remainingQuantity: remainingQuantity,
-                lowStockThreshold: lowStockThreshold,
-              ),
-          createCompanionCallback:
-              ({
-                Value<int> medicineId = const Value.absent(),
-                required int totalQuantity,
-                required int remainingQuantity,
-                Value<int> lowStockThreshold = const Value.absent(),
-              }) => StocksCompanion.insert(
-                medicineId: medicineId,
-                totalQuantity: totalQuantity,
-                remainingQuantity: remainingQuantity,
-                lowStockThreshold: lowStockThreshold,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) =>
-                    (e.readTable(table), $$StocksTableReferences(db, table, e)),
-              )
-              .toList(),
-          prefetchHooksCallback: ({medicineId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (medicineId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.medicineId,
-                                referencedTable: $$StocksTableReferences
-                                    ._medicineIdTable(db),
-                                referencedColumn: $$StocksTableReferences
-                                    ._medicineIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$StocksTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $StocksTable,
-      Stock,
-      $$StocksTableFilterComposer,
-      $$StocksTableOrderingComposer,
-      $$StocksTableAnnotationComposer,
-      $$StocksTableCreateCompanionBuilder,
-      $$StocksTableUpdateCompanionBuilder,
-      (Stock, $$StocksTableReferences),
-      Stock,
-      PrefetchHooks Function({bool medicineId})
-    >;
 typedef $$ExpensesTableCreateCompanionBuilder =
     ExpensesCompanion Function({
       Value<int> id,
@@ -4114,6 +3442,7 @@ typedef $$IntakeHistoriesTableCreateCompanionBuilder =
       required DateTime intakeTime,
       required int repeatType,
       required String status,
+      Value<double?> doseValue,
     });
 typedef $$IntakeHistoriesTableUpdateCompanionBuilder =
     IntakeHistoriesCompanion Function({
@@ -4122,6 +3451,7 @@ typedef $$IntakeHistoriesTableUpdateCompanionBuilder =
       Value<DateTime> intakeTime,
       Value<int> repeatType,
       Value<String> status,
+      Value<double?> doseValue,
     });
 
 final class $$IntakeHistoriesTableReferences
@@ -4199,6 +3529,11 @@ class $$IntakeHistoriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<double> get doseValue => $composableBuilder(
+    column: $table.doseValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$MedicinesTableFilterComposer get medicineId {
     final $$MedicinesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4270,6 +3605,11 @@ class $$IntakeHistoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get doseValue => $composableBuilder(
+    column: $table.doseValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$MedicinesTableOrderingComposer get medicineId {
     final $$MedicinesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4336,6 +3676,9 @@ class $$IntakeHistoriesTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<double> get doseValue =>
+      $composableBuilder(column: $table.doseValue, builder: (column) => column);
 
   $$MedicinesTableAnnotationComposer get medicineId {
     final $$MedicinesTableAnnotationComposer composer = $composerBuilder(
@@ -4419,12 +3762,14 @@ class $$IntakeHistoriesTableTableManager
                 Value<DateTime> intakeTime = const Value.absent(),
                 Value<int> repeatType = const Value.absent(),
                 Value<String> status = const Value.absent(),
+                Value<double?> doseValue = const Value.absent(),
               }) => IntakeHistoriesCompanion(
                 id: id,
                 medicineId: medicineId,
                 intakeTime: intakeTime,
                 repeatType: repeatType,
                 status: status,
+                doseValue: doseValue,
               ),
           createCompanionCallback:
               ({
@@ -4433,12 +3778,14 @@ class $$IntakeHistoriesTableTableManager
                 required DateTime intakeTime,
                 required int repeatType,
                 required String status,
+                Value<double?> doseValue = const Value.absent(),
               }) => IntakeHistoriesCompanion.insert(
                 id: id,
                 medicineId: medicineId,
                 intakeTime: intakeTime,
                 repeatType: repeatType,
                 status: status,
+                doseValue: doseValue,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4536,8 +3883,6 @@ class $AppDatabaseManager {
       $$MedicinesDoseTableTableManager(_db, _db.medicinesDose);
   $$MedicinesRepeatTableTableManager get medicinesRepeat =>
       $$MedicinesRepeatTableTableManager(_db, _db.medicinesRepeat);
-  $$StocksTableTableManager get stocks =>
-      $$StocksTableTableManager(_db, _db.stocks);
   $$ExpensesTableTableManager get expenses =>
       $$ExpensesTableTableManager(_db, _db.expenses);
   $$IntakeHistoriesTableTableManager get intakeHistories =>

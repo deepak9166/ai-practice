@@ -1,17 +1,17 @@
-class ExerciseModel {
+class MedicineModel {
   final String name;
   final String date;
-  final String msgNames;
+  final String type;
   final String status;
-  final List<String> previewImages;
-  bool? isBestPerformOfDay;
+  final int? medicineId;
+  final int? intakeId;
 
-  ExerciseModel({
+  MedicineModel({
     required this.date,
-    required this.msgNames,
+    required this.type,
     required this.name,
-    required this.previewImages,
     required this.status,
-    this.isBestPerformOfDay = false,
+    this.medicineId,
+    this.intakeId,
   });
 }

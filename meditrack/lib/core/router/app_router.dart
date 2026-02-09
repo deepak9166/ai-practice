@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../extension/toast_helper.dart';
+import '../../presentation/screen/landing/add_medicine/update_medicine_screen.dart';
 import '../../presentation/screen/landing/tab2_medicines/medicine_detail_page.dart';
+import '../../presentation/screen/landing/tab2_medicines/medicine_expenses_page.dart';
 import '../../presentation/screens/add_workout/add_workout.dart';
 import '../../presentation/screen/auth/forgot_password/forgot_password_otp_verify.dart';
 import '../../presentation/screen/auth/forgot_password/forgot_password_screen.dart';
@@ -159,6 +161,28 @@ class AppRouter {
         pageBuilder: (context, state) => animatedPage(
           key: state.pageKey,
           child: MedicineDetailPage(medicineId: ((state.extra ?? 0) as int)),
+          animationType: AnimationType.slideRight,
+        ),
+      ),
+      GoRoute(
+        path: AppConstants.routeUpdateMedicine,
+        name: AppConstants.routeUpdateMedicine,
+        pageBuilder: (context, state) => animatedPage(
+          key: state.pageKey,
+          child: UpdateMedicineScreen(
+            medicineId: (state.extra ?? 0) as int,
+          ),
+          animationType: AnimationType.slideRight,
+        ),
+      ),
+      GoRoute(
+        path: AppConstants.routeMedicineExpenses,
+        name: AppConstants.routeMedicineExpenses,
+        pageBuilder: (context, state) => animatedPage(
+          key: state.pageKey,
+          child: MedicineExpensesPage(
+            medicineId: (state.extra ?? 0) as int,
+          ),
           animationType: AnimationType.slideRight,
         ),
       ),

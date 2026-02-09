@@ -1,4 +1,3 @@
-import 'package:drift/drift.dart';
 import 'package:flutter/material.dart';
 import 'package:meditrack/extension/keyboard_hide_extesion.dart';
 import 'package:meditrack/extension/toast_helper.dart';
@@ -18,43 +17,39 @@ class AddMedicineViewModel extends BaseViewModel {
   bool isLowAlert = false;
 
   Future<void> saveMedicine(BuildContext context) async {
-    appLog('medicineNameTextC ${medicineNameTextC.text}');
-    appLog('typeTextC ${typeTextC}');
-
-    if (totalQuantity.text.trim().isEmpty) {
-      context.showWarning('Please enter name!');
+    if (medicineNameTextC.text.trim().isEmpty) {
+      context.showWarning('Please enter medicine name!');
       return;
     }
-
     if (typeTextC == null) {
-      context.showWarning('Please enter type!');
+      context.showWarning('Please select type!');
+      return;
+    }
+    if (totalQuantity.text.trim().isEmpty) {
+      context.showWarning('Please enter total quantity!');
       return;
     }
 
-    var data = MedicinesCompanion.insert(
-      name: medicineNameTextC.text,
+    final data = MedicinesCompanion.insert(
+      name: medicineNameTextC.text.trim(),
       typeId: typeTextC!,
       lowStockAlert: isLowAlert,
       totalQuantity: int.tryParse(totalQuantity.text) ?? 0,
     );
-
-    print("data ${data}");
-    var result = await db.addMedicine(data);
-
-    context.showSuccess('Medicine Added Successfully!');
+    await db.addMedicine(data);
+    context.showSuccess('Medicine added successfully!');
     context.hideKeyboard();
-
     _clearForm();
-
-    // appLog('result $result');
   }
 
   _clearForm() {
     medicineNameTextC.text = "";
     totalQuantity.text = "";
+    typeTextC = null;
+    isLowAlert = false;
   }
 
-  Future<List<DropdownValueModel>> getAllMedicinesType() async {
+  Future<List<DropdownValueModel<int>>> getAllMedicinesType() async {
     var list = await db.getAllMedicinesType();
 
     return list
@@ -66,13 +61,20 @@ class AddMedicineViewModel extends BaseViewModel {
   }
 
   Future<List<String>> fetchMedicines(String query) async {
-    await Future.delayed(const Duration(milliseconds: 500)); // mock delay
-    return [
-      'Paracetamol',
-      'Panadol',
-      'Pantoprazole',
-      'Aspirin',
-      'Amoxicillin',
-    ].where((e) => e.toLowerCase().contains(query.toLowerCase())).toList();
+    var list = await db.searchMedicinesByName(query);
+    appLog('total medicines found: ${list.length}');
+    return list.map((medicine) => medicine.name).toList();
+  }
+
+  Future<int?> getMedicineIdByName(String name) async {
+    final medicine = await db.getMedicineByName(name);
+    return medicine?.id;
+  }
+
+  void clearForm() {
+    medicineNameTextC.text = "";
+    totalQuantity.text = "";
+    typeTextC = null;
+    isLowAlert = false;
   }
 }
