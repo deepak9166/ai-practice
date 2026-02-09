@@ -49,10 +49,9 @@ class AddMedicineViewModel extends BaseViewModel {
     // appLog('result $result');
   }
 
-  _clearForm(){
+  _clearForm() {
     medicineNameTextC.text = "";
-    totalQuantity.text= "";
-
+    totalQuantity.text = "";
   }
 
   Future<List<DropdownValueModel>> getAllMedicinesType() async {
@@ -64,5 +63,16 @@ class AddMedicineViewModel extends BaseViewModel {
               DropdownValueModel<int>(title: element.name, value: element.id),
         )
         .toList();
+  }
+
+  Future<List<String>> fetchMedicines(String query) async {
+    await Future.delayed(const Duration(milliseconds: 500)); // mock delay
+    return [
+      'Paracetamol',
+      'Panadol',
+      'Pantoprazole',
+      'Aspirin',
+      'Amoxicillin',
+    ].where((e) => e.toLowerCase().contains(query.toLowerCase())).toList();
   }
 }

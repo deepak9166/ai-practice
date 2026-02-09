@@ -59,6 +59,9 @@ class LocalNotificationService {
     if (notificationId == null) return;
 
     switch (actionId) {
+      case 'SNOOZE_1':
+        _snooze(notificationId, const Duration(minutes: 1), payload);
+        break;
       case 'SNOOZE_5':
         _snooze(notificationId, const Duration(minutes: 5), payload);
         break;
@@ -93,7 +96,7 @@ class LocalNotificationService {
           priority: Priority.high,
         ),
       ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
 
       payload: payload,
     );
@@ -107,6 +110,11 @@ class LocalNotificationService {
       importance: Importance.max,
       priority: Priority.high,
       actions: [
+        AndroidNotificationAction(
+          'SNOOZE_1',
+          '+1 min',
+          showsUserInterface: false,
+        ),
         AndroidNotificationAction(
           'SNOOZE_5',
           '+5 min',

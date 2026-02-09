@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:meditrack/extension/keyboard_hide_extesion.dart';
-import 'package:meditrack/presentation/common_widgets/smart_image_view.dart';
 import 'package:meditrack/presentation/providers/vm_provider.dart';
 import 'package:meditrack/presentation/screen/base/base_consumer_state.dart';
 
-import '../../../../config/svg_config.dart';
 import '../../../../core/utils/image_picker_utils.dart';
 import '../../../../extension/sage_execute_extesion.dart';
 import '../../../../log/app_logs.dart';
@@ -17,6 +13,8 @@ import '../../../common_widgets/custom_button.dart';
 import '../../../common_widgets/custom_checkbox_list.dart';
 import '../../../common_widgets/custom_input_dropdown.dart';
 import '../../../common_widgets/custom_input_field.dart';
+import '../../../common_widgets/custom_textfield_autofill.dart';
+import '../../../common_widgets/custom_textfield_dropdown.dart';
 import '../../../common_widgets/spacing_widgets.dart';
 import '../../../common_widgets/user_image_upload_bottom_sheet.dart';
 import '../../../common_widgets/visual_profress_viewer.dart';
@@ -45,8 +43,6 @@ class _AddMedicineScreenState
     with ImagePickerUtils {
   final _formKey = GlobalKey<FormState>();
   final ValueNotifier<String> _selectedImage = ValueNotifier('');
-
-
 
   List<DropdownValueModel<double>> doseOfMedicine = [
     DropdownValueModel(title: '1/4', value: 0.25),
@@ -97,10 +93,15 @@ class _AddMedicineScreenState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CustomInputField(
+                  CustomTextfieldAutofill(
+                    hintText: 'Enter Medicine name',
+                    fetchSuggestions: (query) => viewModel.fetchMedicines(query),
                     controller: viewModel.medicineNameTextC,
-                    hint: 'Enter medicine name',
+                    onItemSelected: (value) {
+                    appLog('value ${value}');
+                    },
                   ),
+
                   VerticalSpacing.medium,
                   FutureBuilder(
                     future: viewModel.getAllMedicinesType(),
@@ -110,12 +111,12 @@ class _AddMedicineScreenState
                         items: asyncSnapshot.data ?? [],
                         onChanged: (value) {
                           appLog('type...');
-                         
+
                           viewModel.typeTextC = (value?.value ?? 0);
                         },
                         value: null,
                       );
-                    }
+                    },
                   ),
 
                   VerticalSpacing.medium,
@@ -128,9 +129,12 @@ class _AddMedicineScreenState
                           keyboardType: TextInputType.number,
                         ),
                       ),
-                      IconButton(onPressed: () {
-                        _showMedicineCalculator();
-                      }, icon: Icon(Icons.calculate)),
+                      IconButton(
+                        onPressed: () {
+                          _showMedicineCalculator();
+                        },
+                        icon: Icon(Icons.calculate),
+                      ),
                     ],
                   ),
 
@@ -208,19 +212,20 @@ class _AddMedicineScreenState
   String screenName() {
     return "Add Medicines";
   }
-  
+
   void _showMedicineCalculator() {
     showDialog(
-      
-      context: context, builder: (context) => AlertDialog(
+      context: context,
+      builder: (context) => AlertDialog(
         insetPadding: EdgeInsets.all(0),
         contentPadding: EdgeInsets.all(0),
-        
-      content: MedCalculator(
-        onDone: (totalMedicne) {
-          viewModel.totalQuantity.text = totalMedicne;
-        },
+
+        content: MedCalculator(
+          onDone: (totalMedicne) {
+            viewModel.totalQuantity.text = totalMedicne;
+          },
+        ),
       ),
-    ),);
+    );
   }
 }
