@@ -184,6 +184,34 @@ class AppDatabase extends _$AppDatabase {
   Future<IntakeHistory?> getIntakeById(int id) => (select(
     intakeHistories,
   )..where((t) => t.id.equals(id))).getSingleOrNull();
+
+  // -------- Global Expense Queries --------
+
+  Future<List<Expense>> getAllExpenses({DateTime? from, DateTime? to}) async {
+    final query = select(expenses)
+      ..orderBy([(e) => OrderingTerm.desc(e.purchaseDate)]);
+    if (from != null) {
+      query.where((e) => e.purchaseDate.isBiggerOrEqualValue(from));
+    }
+    if (to != null) {
+      query.where((e) => e.purchaseDate.isSmallerOrEqualValue(to));
+    }
+    return query.get();
+  }
+
+  Stream<List<Expense>> watchAllExpenses() => (select(expenses)
+    ..orderBy([(e) => OrderingTerm.desc(e.purchaseDate)])).watch();
+
+  // -------- Global Intake History --------
+
+  Stream<List<IntakeHistory>> watchAllIntakeHistoriesDesc() => (select(
+    intakeHistories,
+  )..orderBy([(t) => OrderingTerm.desc(t.intakeTime)])).watch();
+
+  // -------- Low stock medicines --------
+
+  Stream<List<Medicine>> watchLowStockMedicines() => (select(medicines)
+    ..where((m) => m.lowStockAlert & m.totalQuantity.isSmallerThanValue(10))).watch();
 }
 
 LazyDatabase _openConnection() {

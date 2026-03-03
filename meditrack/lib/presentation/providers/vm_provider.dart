@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:meditrack/presentation/screen/landing/tab3_expenses/expenses_view_model.dart';
 import 'package:meditrack/presentation/screens/add_workout/view_model/add_workout_viewmodel.dart';
 import 'package:meditrack/presentation/screens/landing_app/tab_excercise/filter/filter_view_model.dart';
 import 'package:meditrack/presentation/screens/profile_setup/mmg_level/mmg_level_view_model.dart';
@@ -182,4 +183,9 @@ final notificationServiceProvider = Provider<LocalNotificationService>((ref) {
 final homeVm = Provider.autoDispose<HomeViewModel>((ref) {
   final db = ref.read(databaseProvider);
   return HomeViewModel(db: db);
+});
+
+final expensesVm = Provider.autoDispose<ExpensesViewModel>((ref) {
+  final db = ref.read(databaseProvider);
+  return ExpensesViewModel(db: db);
 });
