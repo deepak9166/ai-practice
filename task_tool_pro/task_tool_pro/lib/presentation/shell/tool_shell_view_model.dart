@@ -62,6 +62,12 @@ class ToolShellViewModel extends ChangeNotifier {
         description: 'Shortcuts and automation for desktop.',
         icon: Icons.desktop_windows_rounded,
       ),
+      ToolDefinition(
+        id: 'ai-blog-generator',
+        name: 'AI Blog Generator',
+        description: 'Generate blog posts with ChatGPT or Gemini.',
+        icon: Icons.edit_note_rounded,
+      ),
     ];
   }
 }

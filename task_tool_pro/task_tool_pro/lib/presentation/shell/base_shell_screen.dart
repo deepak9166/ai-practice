@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/tools/tool_definition.dart';
+import '../tools/ai_blog_generator/ai_blog_generator_screen.dart';
 import '../tools/video_downloader/video_downloader_view.dart';
 import 'tool_shell_view_model.dart';
 
@@ -85,10 +86,10 @@ class _DesktopShell extends StatelessWidget {
               width: 260,
               margin: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant.withOpacity(0.9),
+                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: colorScheme.outlineVariant.withOpacity(0.4),
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.4),
                 ),
               ),
               child: Column(
@@ -131,7 +132,8 @@ class _DesktopShell extends StatelessWidget {
                               style: Theme.of(context)
                                   .textTheme
                                   .labelMedium
-                                  ?.copyWith(color: colorScheme.onSurfaceVariant),
+                                  ?.copyWith(
+                                      color: colorScheme.onSurfaceVariant),
                             ),
                           ],
                         ),
@@ -146,7 +148,7 @@ class _DesktopShell extends StatelessWidget {
                         horizontal: 8,
                       ),
                       itemCount: tools.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 2),
+                      separatorBuilder: (_, i) => const SizedBox(height: 2),
                       itemBuilder: (context, index) {
                         final tool = tools[index];
                         final isSelected = index == selectedIndex;
@@ -165,7 +167,7 @@ class _DesktopShell extends StatelessWidget {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(14),
-                        color: colorScheme.surface.withOpacity(0.9),
+                        color: colorScheme.surface.withValues(alpha: 0.9),
                       ),
                       child: Row(
                         children: [
@@ -197,12 +199,12 @@ class _DesktopShell extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      colorScheme.surfaceVariant.withOpacity(0.85),
-                      colorScheme.surface.withOpacity(0.9),
+                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
+                      colorScheme.surface.withValues(alpha: 0.9),
                     ],
                   ),
                   border: Border.all(
-                    color: colorScheme.outlineVariant.withOpacity(0.5),
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                 ),
                 child: _ToolDetailView(
@@ -250,7 +252,10 @@ class _MobileShell extends StatelessWidget {
               ListTile(
                 leading: CircleAvatar(
                   backgroundColor: colorScheme.primary,
-                  child: const Icon(Icons.auto_awesome_rounded, color: Colors.white),
+                  child: const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: Colors.white,
+                  ),
                 ),
                 title: const Text('My Tool'),
                 subtitle: const Text('Multi-purpose workspace'),
@@ -260,7 +265,7 @@ class _MobileShell extends StatelessWidget {
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   itemCount: tools.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 2),
+                  separatorBuilder: (_, i) => const SizedBox(height: 2),
                   itemBuilder: (context, index) {
                     final tool = tools[index];
                     final isSelected = index == selectedIndex;
@@ -324,7 +329,7 @@ class _SidebarItem extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     final background = isSelected
-        ? colorScheme.primaryContainer.withOpacity(0.9)
+        ? colorScheme.primaryContainer.withValues(alpha: 0.9)
         : Colors.transparent;
 
     final foreground = isSelected
@@ -370,9 +375,10 @@ class _SidebarItem extends StatelessWidget {
                       tool.description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: foreground.withOpacity(0.85),
-                          ),
+                      style:
+                          Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: foreground.withValues(alpha: 0.85),
+                              ),
                     ),
                   ],
                 ],
@@ -429,9 +435,10 @@ class _ToolDetailView extends StatelessWidget {
                   children: [
                     Text(
                       tool.name,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -451,7 +458,7 @@ class _ToolDetailView extends StatelessWidget {
               ),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
-                color: colorScheme.primary.withOpacity(0.12),
+                color: colorScheme.primary.withValues(alpha: 0.12),
               ),
               child: Row(
                 children: [
@@ -483,68 +490,76 @@ class _ToolDetailView extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              color: colorScheme.surface.withOpacity(0.9),
+              color: colorScheme.surface.withValues(alpha: 0.9),
             ),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isNarrow = constraints.maxWidth < 520;
 
+                // ---- Registered tool screens ----
+                if (tool.id == 'media-tools') {
+                  return const VideoDownloaderView();
+                }
+
+                if (tool.id == 'ai-blog-generator') {
+                  return const AiBlogGeneratorScreen();
+                }
+
+                // ---- Placeholder for unimplemented tools ----
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (tool.id == 'media-tools') ...[
-                      const VideoDownloaderView(),
-                    ] else ...[
-                      Text(
-                        'Tool workspace',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'This is the main area where the selected tool will appear. '
-                        'As you add more features, you can plug them into this workspace.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                      ),
-                      const SizedBox(height: 16),
-                      if (!isNarrow)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _PlaceholderCard(
-                                title: 'Input',
-                                subtitle: 'User data, files or text go here.',
-                                icon: Icons.input_rounded,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _PlaceholderCard(
-                                title: 'Output',
-                                subtitle: 'Results from your tool are shown here.',
-                                icon: Icons.outbox_rounded,
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Column(
-                          children: const [
-                            _PlaceholderCard(
+                    Text(
+                      'Tool workspace',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'This is the main area where the selected tool will appear. '
+                      'As you add more features, you can plug them into this workspace.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (!isNarrow)
+                      Row(
+                        children: const [
+                          Expanded(
+                            child: _PlaceholderCard(
                               title: 'Input',
                               subtitle: 'User data, files or text go here.',
                               icon: Icons.input_rounded,
                             ),
-                            SizedBox(height: 12),
-                            _PlaceholderCard(
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: _PlaceholderCard(
                               title: 'Output',
-                              subtitle: 'Results from your tool are shown here.',
+                              subtitle:
+                                  'Results from your tool are shown here.',
                               icon: Icons.outbox_rounded,
                             ),
-                          ],
-                        ),
-                    ],
+                          ),
+                        ],
+                      )
+                    else
+                      const Column(
+                        children: [
+                          _PlaceholderCard(
+                            title: 'Input',
+                            subtitle: 'User data, files or text go here.',
+                            icon: Icons.input_rounded,
+                          ),
+                          SizedBox(height: 12),
+                          _PlaceholderCard(
+                            title: 'Output',
+                            subtitle:
+                                'Results from your tool are shown here.',
+                            icon: Icons.outbox_rounded,
+                          ),
+                        ],
+                      ),
                   ],
                 );
               },
@@ -575,9 +590,9 @@ class _PlaceholderCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        color: colorScheme.surfaceVariant.withOpacity(0.9),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
         border: Border.all(
-          color: colorScheme.outlineVariant.withOpacity(0.6),
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
         ),
       ),
       child: Row(
@@ -588,7 +603,7 @@ class _PlaceholderCard extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: colorScheme.primary.withOpacity(0.15),
+              color: colorScheme.primary.withValues(alpha: 0.15),
             ),
             child: Icon(
               icon,
