@@ -13,17 +13,20 @@ So you only need to run one server and one `/docs`:
 
 from __future__ import annotations
 
+import json
 import logging
 import os
-from typing import Any, Dict
+import subprocess
+from typing import Any, Dict, Optional
 
+import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, HttpUrl
 
 from instagram_video_downloader import (
     InstagramDownloadError,
+    cleanup_directory,
     download_instagram_video,
-    parse_instagram_url,
 )
 from snapchat_video_downloader import (
     SnapchatDownloadError,
@@ -39,8 +42,11 @@ logger = logging.getLogger("video_downloader_api")
 
 
 BASE_DIR = os.path.dirname(__file__)
-INSTAGRAM_DOWNLOAD_ROOT = os.path.join(BASE_DIR, "downloads_instagram")
 SNAPCHAT_DOWNLOAD_ROOT = os.path.join(BASE_DIR, "downloads_snapchat")
+
+# WidCash API configuration
+WIDCASH_API_BASE = os.environ.get("WIDCASH_API_BASE", "https://widcash.preptm.com")
+WIDCASH_UPLOAD_URL = f"{WIDCASH_API_BASE}/api/Reel/upload"
 
 
 class InstagramDownloadRequest(BaseModel):
@@ -48,7 +54,7 @@ class InstagramDownloadRequest(BaseModel):
 
 
 class InstagramDownloadResponse(BaseModel):
-    file_path: str
+    video_url: str
     metadata: Dict[str, Any]
 
 
@@ -57,7 +63,7 @@ class SnapchatDownloadRequest(BaseModel):
 
 
 class SnapchatDownloadResponse(BaseModel):
-    file_path: str
+    video_url: str
     metadata: Dict[str, Any]
 
 
@@ -72,97 +78,138 @@ app = FastAPI(
 )
 
 
+def upload_video_to_widcash(
+    file_path: str,
+    additional_data: str = "",
+    keyword: str = "",
+    timeout: int =2000,
+) -> str:
+    """
+    Upload a video file to the WidCash Reel API and return the hosted URL.
+
+    Sends multipart/form-data with:
+      - File: the video file
+      - AdditionalData: metadata string
+      - Keyword: keyword tag
+
+    Returns:
+        The hosted video URL from the API response.
+
+    Raises:
+        HTTPException: If the upload fails.
+    """
+    logger.info("Uploading video to WidCash API via curl: %s", WIDCASH_UPLOAD_URL)
+
+    cmd = [
+        "curl", "-s", "-w", "\n%{http_code}",
+        "-X", "POST", WIDCASH_UPLOAD_URL,
+        "-F", f"AdditionalData={additional_data}",
+        "-F", f"Keyword={keyword}",
+        "-F", f"File=@{file_path};type=video/mp4",
+    ]
+
+    try:
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(status_code=504, detail="WidCash upload timed out") from exc
+
+    output = result.stdout.strip()
+    lines = output.rsplit("\n", 1)
+
+    if len(lines) < 2:
+        logger.error("Unexpected curl output: %s", output)
+        raise HTTPException(status_code=502, detail="WidCash upload failed: unexpected response")
+
+    response_body, http_code = lines[0], lines[1]
+    logger.info("WidCash response (HTTP %s): %s", http_code, response_body[:500])
+
+    if not http_code.startswith("2"):
+        raise HTTPException(
+            status_code=502,
+            detail=f"WidCash upload failed with status {http_code}: {response_body[:300]}",
+        )
+
+    body = json.loads(response_body)
+    if not body.get("success"):
+        logger.error("WidCash upload returned error: %s", body.get("message"))
+        raise HTTPException(
+            status_code=502,
+            detail=f"WidCash upload error: {body.get('message')}",
+        )
+
+    # Response: {"success": true, "message": "...", "data": "https://...url..."}
+    video_url = body.get("data")
+    if not video_url:
+        raise HTTPException(status_code=502, detail="WidCash upload returned no video URL")
+
+    logger.info("WidCash upload successful. Video URL: %s", video_url)
+    return video_url
+
+
 @app.post("/instagram/download", response_model=InstagramDownloadResponse, tags=["instagram"])
 async def instagram_download_endpoint(
     payload: InstagramDownloadRequest,
 ) -> InstagramDownloadResponse:
     """
-    Download an Instagram video and return local path + metadata.
+    Download an Instagram video, upload it to WidCash API, and return the hosted URL + metadata.
+    Video is downloaded to a temp directory and cleaned up after upload.
     """
     logger.info("IG Step 1: Received /instagram/download request with URL=%s", payload.url)
 
+    working_dir: Optional[str] = None
+
     try:
-        logger.info(
-            "IG Step 2: Starting download into root folder: %s",
-            INSTAGRAM_DOWNLOAD_ROOT,
-        )
-        video_path, metadata, _working_dir = download_instagram_video(
+        # Step 2: Download to temp directory (output_dir=None uses tempdir)
+        logger.info("IG Step 2: Downloading video to temp directory")
+        video_path, metadata, working_dir = download_instagram_video(
             url=str(payload.url),
-            output_dir=INSTAGRAM_DOWNLOAD_ROOT,
         )
 
-        abs_path = os.path.abspath(video_path)
-        logger.info("IG Step 3: Download finished. Local video path: %s", abs_path)
-        logger.info("IG Step 4: Metadata keys: %s", list(metadata.keys()))
+        logger.info("IG Step 3: Download finished. Temp path: %s", video_path)
+
+        # Step 4: Upload to WidCash API — send only key metadata fields
+        meta_for_upload = {
+            "title": metadata.get("title") or "",
+            "description": metadata.get("caption") or "",
+            "likesCount": metadata.get("like_count") or 0,
+            "commentCount": metadata.get("comment_count") or 0,
+            "shareCount": 0,
+            "username": metadata.get("author_username") or "",
+        }
+        additional_data = json.dumps(meta_for_upload, ensure_ascii=False, default=str)
+        keyword = ""
+
+        video_url = upload_video_to_widcash(
+            file_path=video_path,
+            additional_data=additional_data,
+            keyword='data test',
+        )
+
+        logger.info("IG Step 5: Upload complete. Hosted URL: %s", video_url)
 
         response = InstagramDownloadResponse(
-            file_path=abs_path,
+            video_url=video_url,
             metadata=metadata,
         )
-        logger.info("IG Step 5: Returning successful Instagram response to client.")
+        logger.info("IG Step 6: Returning response to client.")
         return response
 
     except InstagramDownloadError as exc:
         logger.error("Instagram download error: %s", exc)
-
-        # Fallback: if an existing video file for this shortcode is already on disk,
-        # return that instead of failing.
-        try:
-            shortcode = parse_instagram_url(str(payload.url))
-            fallback_dir = os.path.join(INSTAGRAM_DOWNLOAD_ROOT, shortcode)
-            logger.info(
-                "IG Fallback check: looking for existing video under %s", fallback_dir
-            )
-
-            existing_video_path = None
-            if os.path.isdir(fallback_dir):
-                for root, _dirs, files in os.walk(fallback_dir):
-                    for fname in files:
-                        if fname.lower().endswith(".mp4"):
-                            existing_video_path = os.path.join(root, fname)
-                            break
-                    if existing_video_path:
-                        break
-
-            if existing_video_path:
-                abs_existing = os.path.abspath(existing_video_path)
-                logger.info(
-                    "IG Fallback: found existing video at %s, returning it to client.",
-                    abs_existing,
-                )
-                minimal_metadata: Dict[str, Any] = {
-                    "shortcode": shortcode,
-                    "source_url": str(payload.url),
-                    "is_video": True,
-                    "video_url": None,
-                    "title": None,
-                    "caption": None,
-                    "upload_date": None,
-                    "author_username": None,
-                    "view_count": None,
-                    "like_count": None,
-                    "comment_count": None,
-                    "thumbnail_url": None,
-                    "local_file_name": os.path.basename(abs_existing),
-                }
-                return InstagramDownloadResponse(
-                    file_path=abs_existing,
-                    metadata=minimal_metadata,
-                )
-            else:
-                logger.info(
-                    "IG Fallback: no existing video file found for shortcode %s",
-                    shortcode,
-                )
-        except Exception as fb_exc:  # noqa: BLE001
-            logger.warning("IG fallback lookup failed: %s", fb_exc)
-
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except HTTPException:
+        raise
     except Exception as exc:  # noqa: BLE001
         logger.exception(
             "Unexpected server error while handling /instagram/download: %s", exc
         )
         raise HTTPException(status_code=500, detail="Internal server error") from exc
+    finally:
+        # Always clean up temp directory
+        if working_dir:
+            cleanup_directory(working_dir)
 
 
 @app.post("/snapchat/download", response_model=SnapchatDownloadResponse, tags=["snapchat"])
@@ -170,37 +217,62 @@ async def snapchat_download_endpoint(
     payload: SnapchatDownloadRequest,
 ) -> SnapchatDownloadResponse:
     """
-    Download a Snapchat video (direct URL) and return local path + metadata.
+    Download a Snapchat video, upload it to WidCash API, and return the hosted URL + metadata.
+    Video is downloaded to a temp directory and cleaned up after upload.
     """
     logger.info("SC Step 1: Received /snapchat/download request with URL=%s", payload.url)
 
+    working_dir: Optional[str] = None
+
     try:
-        logger.info(
-            "SC Step 2: Starting download into root folder: %s",
-            SNAPCHAT_DOWNLOAD_ROOT,
-        )
-        video_path, metadata, _working_dir = download_snapchat_video(
+        # Step 2: Download to temp directory
+        logger.info("SC Step 2: Downloading video to temp directory")
+        video_path, metadata, working_dir = download_snapchat_video(
             url=str(payload.url),
-            output_dir=SNAPCHAT_DOWNLOAD_ROOT,
         )
 
-        abs_path = os.path.abspath(video_path)
-        logger.info("SC Step 3: Download finished. Local video path: %s", abs_path)
-        logger.info("SC Step 4: Metadata keys: %s", list(metadata.keys()))
+        logger.info("SC Step 3: Download finished. Temp path: %s", video_path)
+
+        # Step 4: Upload to WidCash API
+        meta_for_upload = {
+            "title": metadata.get("page_title") or "",
+            "description": "",
+            "likesCount": 0,
+            "commentCount": 0,
+            "shareCount": 0,
+            "username": "",
+        }
+        additional_data = json.dumps(meta_for_upload, ensure_ascii=False, default=str)
+
+        video_url = upload_video_to_widcash(
+            file_path=video_path,
+            additional_data=additional_data,
+            keyword="test",
+        )
+
+        logger.info("SC Step 5: Upload complete. Hosted URL: %s", video_url)
+
+        metadata["video_url"] = video_url
 
         response = SnapchatDownloadResponse(
-            file_path=abs_path,
+            video_url=video_url,
             metadata=metadata,
         )
-        logger.info("SC Step 5: Returning successful Snapchat response to client.")
+        logger.info("SC Step 6: Returning response to client.")
         return response
 
     except SnapchatDownloadError as exc:
         logger.error("Snapchat download error: %s", exc)
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except HTTPException:
+        raise
     except Exception as exc:  # noqa: BLE001
         logger.exception(
             "Unexpected server error while handling /snapchat/download: %s", exc
         )
         raise HTTPException(status_code=500, detail="Internal server error") from exc
+    finally:
+        # Always clean up temp directory
+        if working_dir:
+            cleanup_directory(working_dir)
 

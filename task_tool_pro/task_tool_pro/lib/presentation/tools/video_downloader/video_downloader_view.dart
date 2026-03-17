@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/downloads/video_download_state.dart';
@@ -123,7 +124,8 @@ class _VideoDownloaderViewState
             'Downloading video... ${(state.progress * 100).toStringAsFixed(0)}%',
             style: Theme.of(context).textTheme.bodySmall,
           ),
-        ] else if (state.isCompleted && state.filePath != null) ...[
+        ] else if (state.isCompleted &&
+            (state.videoUrl != null || state.filePath != null)) ...[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -142,13 +144,40 @@ class _VideoDownloaderViewState
                             fontWeight: FontWeight.w600,
                           ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      state.filePath!,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                    ),
+                    const SizedBox(height: 4),
+                    if (state.videoUrl != null) ...[
+                      SelectableText(
+                        state.videoUrl!,
+                        style:
+                            Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.primary,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      FilledButton.tonalIcon(
+                        onPressed: () {
+                          Clipboard.setData(
+                            ClipboardData(text: state.videoUrl!),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Video URL copied to clipboard'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_rounded, size: 18),
+                        label: const Text('Copy URL'),
+                      ),
+                    ] else ...[
+                      Text(
+                        state.filePath!,
+                        style:
+                            Theme.of(context).textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                      ),
+                    ],
                   ],
                 ),
               ),

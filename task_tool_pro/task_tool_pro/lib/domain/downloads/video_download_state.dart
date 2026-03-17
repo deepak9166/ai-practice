@@ -19,6 +19,7 @@ class VideoDownloadState {
     required this.errorMessage,
     required this.filePath,
     required this.platform,
+    this.videoUrl,
   });
 
   factory VideoDownloadState.initial() => const VideoDownloadState(
@@ -28,6 +29,7 @@ class VideoDownloadState {
         errorMessage: null,
         filePath: null,
         platform: VideoPlatform.instagram,
+        videoUrl: null,
       );
 
   /// Can be a single URL or multiple URLs separated by newlines.
@@ -37,6 +39,9 @@ class VideoDownloadState {
   final String? errorMessage;
   final String? filePath;
   final VideoPlatform platform;
+
+  /// Remote video URL returned by the API (for Instagram/Snapchat).
+  final String? videoUrl;
 
   bool get isIdle => status == DownloadStatus.idle;
 
@@ -53,6 +58,7 @@ class VideoDownloadState {
     String? errorMessage,
     String? filePath,
     VideoPlatform? platform,
+    String? videoUrl,
   }) {
     return VideoDownloadState(
       url: url ?? this.url,
@@ -61,6 +67,7 @@ class VideoDownloadState {
       errorMessage: errorMessage,
       filePath: filePath ?? this.filePath,
       platform: platform ?? this.platform,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 }

@@ -6,6 +6,7 @@ This is intentionally simpler than the Instagram version: it assumes you give
 it a direct video URL that can be fetched with plain HTTP (no auth, no DRM).
 """
 
+import json
 import logging
 import os
 import re
@@ -41,32 +42,50 @@ def _sanitize_filename(name: str, fallback: str) -> str:
 
 def _extract_direct_video_url_from_html(html: str) -> Optional[str]:
     """
-    Best-effort extraction of a direct video URL from a Snapchat page HTML.
+    Extract a direct video URL from a Snapchat page HTML.
 
-    This uses BeautifulSoup to look for:
-        <meta property="og:video" content="https://...mp4">
-        <meta property="og:video:url" content="https://...mp4">
-        <source src="https://...mp4" type="video/mp4">
-        <video src="https://...mp4">
+    Snapchat renders video tags via JavaScript, so they are not in the raw HTML.
+    Instead, the video URL is embedded in the __NEXT_DATA__ JSON blob.
+
+    Path: props.pageProps.spotlightFeed.spotlightStories[0].story.snapList[0].snapUrls.mediaUrl
     """
     soup = BeautifulSoup(html, "html.parser")
 
-    # 1) og:video / og:video:url meta tags
-    # for prop in ("og:video", "og:video:url"):
-    #     tag = soup.find("meta", attrs={"property": prop})
-    #     if tag and tag.get("content"):
-    #         return tag["content"]
+    # 1) Extract from __NEXT_DATA__ JSON (primary method)
+    script_tag = soup.find("script", attrs={"id": "__NEXT_DATA__"})
+    if script_tag and script_tag.string:
+        try:
+            data = json.loads(script_tag.string)
+            stories = (
+                data.get("props", {})
+                .get("pageProps", {})
+                .get("spotlightFeed", {})
+                .get("spotlightStories", [])
+            )
+            if stories:
+                media_url = (
+                    stories[0]
+                    .get("story", {})
+                    .get("snapList", [{}])[0]
+                    .get("snapUrls", {})
+                    .get("mediaUrl")
+                )
+                if media_url:
+                    logger.info("Found video URL via __NEXT_DATA__")
+                    return media_url
+        except (json.JSONDecodeError, IndexError, KeyError) as exc:
+            logger.warning("Failed to parse __NEXT_DATA__: %s", exc)
 
-    # 2) <source src="..." type="video/mp4">
+    # 2) Fallback: <source src="..." type="video/mp4">
     source_tag = soup.find("source", attrs={"type": "video/mp4"})
     if source_tag and source_tag.get("src"):
+        logger.info("Found video URL via <source> tag")
         return source_tag["src"]
 
-    logger.info("SOURCE TAG FOUND %s", source_tag)
-
-    # 3) <video src="...">
-    video_tag = soup.find("video", src=True)
+    # 3) Fallback: Any <video> tag with src
+    video_tag = soup.find("video")
     if video_tag and video_tag.get("src"):
+        logger.info("Found video URL via <video> tag")
         return video_tag["src"]
 
     return None
@@ -90,7 +109,7 @@ def _resolve_snapchat_video_url(url: str) -> Tuple[str, Optional[str]]:
 }
 
         resp = requests.get(url, headers=headers, timeout=30)
-        logger.info("RESPONSE FOUND %s", resp.content)
+        # logger.info("RESPONSE FOUND %s", resp.content)
     except requests.RequestException as exc:
         raise SnapchatDownloadError(f"Failed to fetch Snapchat page: {exc}") from exc
 

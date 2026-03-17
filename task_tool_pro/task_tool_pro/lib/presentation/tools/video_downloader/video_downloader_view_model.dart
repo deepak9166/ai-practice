@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart' show getApplicationDocumentsDirectory, getTemporaryDirectory;
 
 import '../../../domain/downloads/video_download_state.dart';
 
@@ -53,44 +53,36 @@ class VideoDownloaderViewModel extends ChangeNotifier {
         progress: 0,
         errorMessage: null,
         filePath: null,
+        videoUrl: null,
       );
       notifyListeners();
 
-      final directory = await _resolveDownloadDirectory();
       final totalCount = urls.length;
 
       String? lastFilePath;
+      String? lastVideoUrl;
       for (var i = 0; i < urls.length; i++) {
         final originalUrl = urls[i];
 
         if (_state.platform == VideoPlatform.instagram) {
-          // Use backend API to download Instagram video
-          final fileName = _buildFileNameFromUrl(originalUrl);
-          final targetFile = File('${directory.path}/$fileName');
-
-          await _downloadInstagramViaApi(
+          lastVideoUrl = await _downloadInstagramViaApi(
             originalUrl: originalUrl,
-            targetFile: targetFile,
             index: i,
             totalCount: totalCount,
           );
-
-          lastFilePath = targetFile.path;
           continue;
         }
 
         if (_state.platform == VideoPlatform.snapchat) {
-          // Use backend API to download Snapchat video on the server
-          await _downloadSnapchatViaApi(
+          lastVideoUrl = await _downloadSnapchatViaApi(
             originalUrl: originalUrl,
             index: i,
             totalCount: totalCount,
           );
-
-          lastFilePath = _state.filePath;
           continue;
         }
 
+        final directory = await _resolveDownloadDirectory();
         final resolvedUrl = await _resolveDownloadUrl(
           originalUrl,
           _state.platform,
@@ -123,9 +115,8 @@ class VideoDownloaderViewModel extends ChangeNotifier {
       _state = _state.copyWith(
         status: DownloadStatus.completed,
         progress: 1,
-        filePath:
-            lastFilePath ??
-            '${directory.path} (${urls.length} video(s) downloaded)',
+        filePath: lastFilePath,
+        videoUrl: lastVideoUrl,
       );
       notifyListeners();
     } catch (error) {
@@ -207,13 +198,11 @@ class VideoDownloaderViewModel extends ChangeNotifier {
     return 'video_$timestamp-$lastSegment.mp4';
   }
 
-  Future<void> _downloadInstagramViaApi({
+  Future<String> _downloadInstagramViaApi({
     required String originalUrl,
-    required File targetFile,
     required int index,
     required int totalCount,
   }) async {
-    // Call backend API to resolve the Instagram media and get metadata
     final response = await _dio.post<Map<String, dynamic>>(
       'http://localhost:8000/instagram/download',
       data: {'url': originalUrl},
@@ -225,45 +214,27 @@ class VideoDownloaderViewModel extends ChangeNotifier {
     );
 
     final body = response.data;
-    print('Response from Instagram downloader API: $body');
     if (body == null) {
       throw Exception('Empty response from Instagram downloader API');
     }
 
-    final metadata = body['metadata'] as Map<String, dynamic>?;
-    final isVideo = metadata?['is_video'] == true;
-    final videoUrl = metadata?['video_url'] as String?;
-
-    if (!isVideo || videoUrl == null || videoUrl.isEmpty) {
+    final videoUrl = body['video_url'] as String?;
+    if (videoUrl == null || videoUrl.isEmpty) {
       throw Exception('API did not return a valid Instagram video URL.');
     }
 
-    // Now download the actual video bytes from metadata.video_url
-    await _dio.download(
-      videoUrl,
-      targetFile.path,
-      onReceiveProgress: (received, total) {
-        if (total <= 0) return;
-        final singleProgress = received / total;
-        final overallProgress =
-            (index / totalCount) + (singleProgress / totalCount);
-        _state = _state.copyWith(progress: overallProgress);
-        notifyListeners();
-      },
-      options: Options(
-        responseType: ResponseType.bytes,
-        followRedirects: true,
-        validateStatus: (status) => status != null && status < 400,
-      ),
-    );
+    final overallProgress = (index + 1) / totalCount;
+    _state = _state.copyWith(progress: overallProgress);
+    notifyListeners();
+
+    return videoUrl;
   }
 
-  Future<void> _downloadSnapchatViaApi({
+  Future<String> _downloadSnapchatViaApi({
     required String originalUrl,
     required int index,
     required int totalCount,
   }) async {
-    // Call backend API to download the Snapchat media and return metadata
     final response = await _dio.post<Map<String, dynamic>>(
       'http://localhost:8000/snapchat/download',
       data: {'url': originalUrl},
@@ -279,18 +250,16 @@ class VideoDownloaderViewModel extends ChangeNotifier {
       throw Exception('Empty response from Snapchat downloader API');
     }
 
-    final filePath = body['file_path'] as String?;
-    if (filePath == null || filePath.isEmpty) {
-      throw Exception('API did not return a Snapchat file path.');
+    final videoUrl = body['video_url'] as String?;
+    if (videoUrl == null || videoUrl.isEmpty) {
+      throw Exception('API did not return a Snapchat video URL.');
     }
 
-    // Since the backend already downloaded the file, we just advance progress
     final overallProgress = (index + 1) / totalCount;
-    _state = _state.copyWith(
-      progress: overallProgress,
-      filePath: filePath,
-    );
+    _state = _state.copyWith(progress: overallProgress);
     notifyListeners();
+
+    return videoUrl;
   }
 
   Future<String> _resolveDownloadUrl(
