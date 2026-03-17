@@ -13,8 +13,7 @@ class VideoDownloaderView extends ConsumerStatefulWidget {
       _VideoDownloaderViewState();
 }
 
-class _VideoDownloaderViewState
-    extends ConsumerState<VideoDownloaderView> {
+class _VideoDownloaderViewState extends ConsumerState<VideoDownloaderView> {
   final TextEditingController _controller = TextEditingController();
 
   @override
@@ -23,9 +22,11 @@ class _VideoDownloaderViewState
     super.dispose();
   }
 
-  Future<void> _onDownloadPressed() async {
+  Future<void> _onUploadPressed() async {
     FocusScope.of(context).unfocus();
-    await ref.read(videoDownloaderViewModelProvider).startDownload();
+    final vm = ref.read(videoDownloaderViewModelProvider);
+    await vm.addAndProcess();
+    _controller.clear();
   }
 
   @override
@@ -37,54 +38,14 @@ class _VideoDownloaderViewState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Download videos',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('Download videos', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Text(
-          'Choose the source (Instagram / Snapchat / direct link), paste one or '
-          'multiple links (one per line). The tool will first fetch the page '
-          'metadata, find a direct video link and then download it.',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text(
-              'Source:',
-              style: Theme.of(context).textTheme.labelMedium,
-            ),
-            ChoiceChip(
-              label: const Text('Instagram'),
-              selected: state.platform == VideoPlatform.instagram,
-              onSelected: state.isInProgress
-                  ? null
-                  : (_) =>
-                      viewModel.updatePlatform(VideoPlatform.instagram),
-            ),
-            ChoiceChip(
-              label: const Text('Snapchat'),
-              selected: state.platform == VideoPlatform.snapchat,
-              onSelected: state.isInProgress
-                  ? null
-                  : (_) =>
-                      viewModel.updatePlatform(VideoPlatform.snapchat),
-            ),
-            ChoiceChip(
-              label: const Text('Direct link'),
-              selected: state.platform == VideoPlatform.direct,
-              onSelected: state.isInProgress
-                  ? null
-                  : (_) =>
-                      viewModel.updatePlatform(VideoPlatform.direct),
-            ),
-          ],
+          'Paste Instagram or Snapchat links (one per line). '
+          'The platform is detected automatically from the URL.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 16),
         Row(
@@ -106,101 +67,62 @@ class _VideoDownloaderViewState
             ),
             const SizedBox(width: 8),
             FilledButton.icon(
-              onPressed: state.isInProgress ? null : _onDownloadPressed,
-              icon: const Icon(Icons.download_rounded),
-              label: Text(state.isInProgress ? 'Downloading...' : 'Download'),
+              onPressed: state.isProcessing && state.url.trim().isEmpty
+                  ? null
+                  : _onUploadPressed,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Upload'),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        if (state.isInProgress) ...[
-          LinearProgressIndicator(
-            value: state.progress > 0 && state.progress <= 1
-                ? state.progress
-                : null,
-          ),
+        if (state.errorMessage != null) ...[
           const SizedBox(height: 8),
-          Text(
-            'Downloading video... ${(state.progress * 100).toStringAsFixed(0)}%',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ] else if (state.isCompleted &&
-            (state.videoUrl != null || state.filePath != null)) ...[
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: Colors.greenAccent.shade400,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Download complete',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                    ),
-                    const SizedBox(height: 4),
-                    if (state.videoUrl != null) ...[
-                      SelectableText(
-                        state.videoUrl!,
-                        style:
-                            Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.primary,
-                                ),
-                      ),
-                      const SizedBox(height: 8),
-                      FilledButton.tonalIcon(
-                        onPressed: () {
-                          Clipboard.setData(
-                            ClipboardData(text: state.videoUrl!),
-                          );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Video URL copied to clipboard'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.copy_rounded, size: 18),
-                        label: const Text('Copy URL'),
-                      ),
-                    ] else ...[
-                      Text(
-                        state.filePath!,
-                        style:
-                            Theme.of(context).textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ] else if (state.isFailed && state.errorMessage != null) ...[
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
                 Icons.error_outline_rounded,
                 color: colorScheme.error,
+                size: 18,
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   state.errorMessage!,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: colorScheme.error,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
                 ),
               ),
             ],
+          ),
+        ],
+        if (state.tasks.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text(
+                'Queue (${state.tasks.length})',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const Spacer(),
+              if (state.tasks.any((t) => t.isCompleted || t.isFailed))
+                TextButton.icon(
+                  onPressed: viewModel.clearCompleted,
+                  icon: const Icon(Icons.clear_all_rounded, size: 18),
+                  label: const Text('Clear done'),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView.builder(
+              itemCount: state.tasks.length,
+              itemBuilder: (context, i) {
+                final task = state.tasks[i];
+                return _TaskTile(task: task, index: i);
+              },
+            ),
           ),
         ],
       ],
@@ -208,3 +130,123 @@ class _VideoDownloaderViewState
   }
 }
 
+class _TaskTile extends StatelessWidget {
+  const _TaskTile({required this.task, required this.index});
+
+  final DownloadTask task;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            _buildStatusIcon(colorScheme),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.url,
+                    style: Theme.of(context).textTheme.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _statusLabel(),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: _statusColor(colorScheme),
+                    ),
+                  ),
+                  if (task.isFailed && task.error != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      task.error!,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: colorScheme.error,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (task.isCompleted && task.resultUrl != null)
+              IconButton(
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                tooltip: 'Copy URL',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: task.resultUrl!));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('URL copied to clipboard'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusIcon(ColorScheme colorScheme) {
+    switch (task.status) {
+      case TaskStatus.pending:
+        return Icon(
+          Icons.schedule_rounded,
+          size: 20,
+          color: colorScheme.onSurfaceVariant,
+        );
+      case TaskStatus.inProgress:
+        return const SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        );
+      case TaskStatus.completed:
+        return Icon(
+          Icons.check_circle_rounded,
+          size: 20,
+          color: Colors.greenAccent.shade400,
+        );
+      case TaskStatus.failed:
+        return Icon(Icons.error_rounded, size: 20, color: colorScheme.error);
+    }
+  }
+
+  String _statusLabel() {
+    switch (task.status) {
+      case TaskStatus.pending:
+        return 'Pending';
+      case TaskStatus.inProgress:
+        return 'Processing...';
+      case TaskStatus.completed:
+        return 'Success';
+      case TaskStatus.failed:
+        return 'Failed';
+    }
+  }
+
+  Color _statusColor(ColorScheme colorScheme) {
+    switch (task.status) {
+      case TaskStatus.pending:
+        return colorScheme.onSurfaceVariant;
+      case TaskStatus.inProgress:
+        return colorScheme.primary;
+      case TaskStatus.completed:
+        return Colors.greenAccent.shade400;
+      case TaskStatus.failed:
+        return colorScheme.error;
+    }
+  }
+}

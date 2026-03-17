@@ -184,7 +184,7 @@ async def instagram_download_endpoint(
         video_url = upload_video_to_widcash(
             file_path=video_path,
             additional_data=additional_data,
-            keyword='data test',
+            keyword=keyword,
         )
 
         logger.info("IG Step 5: Upload complete. Hosted URL: %s", video_url)
@@ -247,7 +247,7 @@ async def snapchat_download_endpoint(
         video_url = upload_video_to_widcash(
             file_path=video_path,
             additional_data=additional_data,
-            keyword="test",
+            keyword=payload.keyword or "funny, entertainment, snapchat",
         )
 
         logger.info("SC Step 5: Upload complete. Hosted URL: %s", video_url)

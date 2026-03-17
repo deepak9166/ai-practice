@@ -1,8 +1,5 @@
-import 'dart:io';
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart' show getApplicationDocumentsDirectory, getTemporaryDirectory;
 
 import '../../../domain/downloads/video_download_state.dart';
 
@@ -22,114 +19,111 @@ class VideoDownloaderViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updatePlatform(VideoPlatform platform) {
-    _state = _state.copyWith(platform: platform, errorMessage: null);
-    notifyListeners();
-  }
-
-  Future<void> startDownload() async {
-    if (_state.isInProgress) return;
-
+  Future<void> addAndProcess() async {
     final raw = _state.url.trim();
     if (raw.isEmpty) {
-      _setError('Please enter at least one video link.');
+      _state = _state.copyWith(errorMessage: 'Please enter at least one video link.');
+      notifyListeners();
       return;
     }
 
     final urls = _parseUrls(raw);
     if (urls.isEmpty) {
-      _setError('Please enter at least one valid video link.');
-      return;
-    }
-
-    if (!_allLookSupported(urls)) {
-      _setError('Please enter Instagram, Snapchat or direct video links.');
-      return;
-    }
-
-    try {
-      _state = _state.copyWith(
-        status: DownloadStatus.inProgress,
-        progress: 0,
-        errorMessage: null,
-        filePath: null,
-        videoUrl: null,
-      );
+      _state = _state.copyWith(errorMessage: 'Please enter at least one valid link.');
       notifyListeners();
+      return;
+    }
 
-      final totalCount = urls.length;
-
-      String? lastFilePath;
-      String? lastVideoUrl;
-      for (var i = 0; i < urls.length; i++) {
-        final originalUrl = urls[i];
-
-        if (_state.platform == VideoPlatform.instagram) {
-          lastVideoUrl = await _downloadInstagramViaApi(
-            originalUrl: originalUrl,
-            index: i,
-            totalCount: totalCount,
-          );
-          continue;
-        }
-
-        if (_state.platform == VideoPlatform.snapchat) {
-          lastVideoUrl = await _downloadSnapchatViaApi(
-            originalUrl: originalUrl,
-            index: i,
-            totalCount: totalCount,
-          );
-          continue;
-        }
-
-        final directory = await _resolveDownloadDirectory();
-        final resolvedUrl = await _resolveDownloadUrl(
-          originalUrl,
-          _state.platform,
+    // Build new tasks from parsed URLs
+    final newTasks = <DownloadTask>[];
+    for (final url in urls) {
+      final platform = _detectPlatform(url);
+      if (platform == null) {
+        _state = _state.copyWith(
+          errorMessage: 'Unsupported URL: $url\nOnly Instagram and Snapchat links are supported.',
         );
-
-        final fileName = _buildFileNameFromUrl(resolvedUrl);
-        final targetFile = File('${directory.path}/$fileName');
-
-        await _dio.download(
-          resolvedUrl,
-          targetFile.path,
-          onReceiveProgress: (received, total) {
-            if (total <= 0) return;
-            final singleProgress = received / total;
-            final overallProgress =
-                (i / totalCount) + (singleProgress / totalCount);
-            _state = _state.copyWith(progress: overallProgress);
-            notifyListeners();
-          },
-          options: Options(
-            responseType: ResponseType.bytes,
-            followRedirects: true,
-            validateStatus: (status) => status != null && status < 400,
-          ),
-        );
-
-        lastFilePath = targetFile.path;
+        notifyListeners();
+        return;
       }
+      newTasks.add(DownloadTask(url: url, platform: platform));
+    }
 
-      _state = _state.copyWith(
-        status: DownloadStatus.completed,
-        progress: 1,
-        filePath: lastFilePath,
-        videoUrl: lastVideoUrl,
-      );
-      notifyListeners();
-    } catch (error) {
-      print('Error downloading video: $error');
-      _setError(
-        'Failed to download video(s). Check the links or your connection.',
-      );
+    // Extend existing list, clear text field
+    final updatedTasks = [..._state.tasks, ...newTasks];
+    _state = _state.copyWith(url: '', tasks: updatedTasks, errorMessage: null);
+    notifyListeners();
+
+    // Start processing if not already running
+    if (!_state.isProcessing) {
+      await _processQueue();
     }
   }
 
-  void reset() {
-    _state = VideoDownloadState.initial();
+  Future<void> _processQueue() async {
+    _state = _state.copyWith(isProcessing: true);
     notifyListeners();
+
+    while (true) {
+      final nextIndex = _state.tasks.indexWhere((t) => t.isPending);
+      if (nextIndex == -1) break;
+
+      // Mark as in-progress
+      _updateTask(nextIndex, _state.tasks[nextIndex].copyWith(status: TaskStatus.inProgress));
+
+      try {
+        final task = _state.tasks[nextIndex];
+        String? resultUrl;
+
+        if (task.platform == VideoPlatform.instagram) {
+          resultUrl = await _downloadInstagramViaApi(task.url);
+        } else if (task.platform == VideoPlatform.snapchat) {
+          resultUrl = await _downloadSnapchatViaApi(task.url);
+        }
+
+        _updateTask(
+          nextIndex,
+          _state.tasks[nextIndex].copyWith(
+            status: TaskStatus.completed,
+            resultUrl: resultUrl,
+          ),
+        );
+      } catch (e) {
+        _updateTask(
+          nextIndex,
+          _state.tasks[nextIndex].copyWith(
+            status: TaskStatus.failed,
+            error: e.toString(),
+          ),
+        );
+      }
+    }
+
+    _state = _state.copyWith(isProcessing: false);
+    notifyListeners();
+  }
+
+  void clearCompleted() {
+    final remaining = _state.tasks.where((t) => !t.isCompleted && !t.isFailed).toList();
+    _state = _state.copyWith(tasks: remaining);
+    notifyListeners();
+  }
+
+  void _updateTask(int index, DownloadTask updated) {
+    final tasks = [..._state.tasks];
+    tasks[index] = updated;
+    _state = _state.copyWith(tasks: tasks);
+    notifyListeners();
+  }
+
+  VideoPlatform? _detectPlatform(String url) {
+    final uri = Uri.tryParse(url);
+    if (uri == null || !uri.hasScheme) return null;
+
+    final host = uri.host.toLowerCase();
+    if (host.contains('instagram.com')) return VideoPlatform.instagram;
+    if (host.contains('snapchat.com')) return VideoPlatform.snapchat;
+
+    return null;
   }
 
   List<String> _parseUrls(String raw) {
@@ -140,69 +134,7 @@ class VideoDownloaderViewModel extends ChangeNotifier {
         .toList();
   }
 
-  bool _allLookSupported(List<String> urls) {
-    return urls.every(_looksLikeSupportedUrl);
-  }
-
-  bool _looksLikeSupportedUrl(String url) {
-    final uri = Uri.tryParse(url);
-    if (uri == null || !uri.hasScheme) return false;
-
-    final host = uri.host.toLowerCase();
-    if (host.contains('instagram.com') || host.contains('snapchat.com')) {
-      return true;
-    }
-
-    if (url.endsWith('.mp4') ||
-        url.endsWith('.mov') ||
-        url.endsWith('.webm') ||
-        url.endsWith('.m4v')) {
-      return true;
-    }
-
-    return false;
-  }
-
-  Future<Directory> _resolveDownloadDirectory() async {
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      return getApplicationDocumentsDirectory();
-    }
-
-    if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-      return getApplicationDocumentsDirectory();
-    }
-
-    return getTemporaryDirectory();
-  }
-
-  String _buildFileNameFromUrl(String url) {
-    final uri = Uri.tryParse(url);
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-
-    String? lastSegment;
-    if (uri != null && uri.pathSegments.isNotEmpty) {
-      lastSegment = uri.pathSegments.lastWhere(
-        (segment) => segment.trim().isNotEmpty,
-        orElse: () => '',
-      );
-    }
-
-    if (lastSegment == null || lastSegment.isEmpty) {
-      return 'video_$timestamp.mp4';
-    }
-
-    if (lastSegment.contains('.')) {
-      return 'video_$timestamp-${lastSegment.replaceAll('/', '_')}';
-    }
-
-    return 'video_$timestamp-$lastSegment.mp4';
-  }
-
-  Future<String> _downloadInstagramViaApi({
-    required String originalUrl,
-    required int index,
-    required int totalCount,
-  }) async {
+  Future<String> _downloadInstagramViaApi(String originalUrl) async {
     final response = await _dio.post<Map<String, dynamic>>(
       'http://localhost:8000/instagram/download',
       data: {'url': originalUrl},
@@ -223,18 +155,10 @@ class VideoDownloaderViewModel extends ChangeNotifier {
       throw Exception('API did not return a valid Instagram video URL.');
     }
 
-    final overallProgress = (index + 1) / totalCount;
-    _state = _state.copyWith(progress: overallProgress);
-    notifyListeners();
-
     return videoUrl;
   }
 
-  Future<String> _downloadSnapchatViaApi({
-    required String originalUrl,
-    required int index,
-    required int totalCount,
-  }) async {
+  Future<String> _downloadSnapchatViaApi(String originalUrl) async {
     final response = await _dio.post<Map<String, dynamic>>(
       'http://localhost:8000/snapchat/download',
       data: {'url': originalUrl},
@@ -255,71 +179,6 @@ class VideoDownloaderViewModel extends ChangeNotifier {
       throw Exception('API did not return a Snapchat video URL.');
     }
 
-    final overallProgress = (index + 1) / totalCount;
-    _state = _state.copyWith(progress: overallProgress);
-    notifyListeners();
-
     return videoUrl;
-  }
-
-  Future<String> _resolveDownloadUrl(
-    String pageUrl,
-    VideoPlatform platform,
-  ) async {
-    if (platform == VideoPlatform.direct) {
-      return pageUrl;
-    }
-
-    // Fetch HTML page first, then try to extract a direct video URL
-    final response = await _dio.get(
-      pageUrl,
-      options: Options(
-        responseType: ResponseType.plain,
-        followRedirects: true,
-        validateStatus: (status) => status != null && status < 400,
-      ),
-    );
-
-    final html = response.data.toString();
-
-    // Common pattern: <meta property="og:video" content="...mp4" />
-    final ogVideoMeta = RegExp(
-      '<meta[^>]+property=["\']og:video["\'][^>]+content=["\']([^"\']+)["\']',
-      caseSensitive: false,
-    ).firstMatch(html);
-
-    if (ogVideoMeta != null) {
-      return ogVideoMeta.group(1)!;
-    }
-
-    final ogVideoUrlMeta = RegExp(
-      '<meta[^>]+property=["\']og:video:url["\'][^>]+content=["\']([^"\']+)["\']',
-      caseSensitive: false,
-    ).firstMatch(html);
-
-    if (ogVideoUrlMeta != null) {
-      return ogVideoUrlMeta.group(1)!;
-    }
-
-    // Fallback: first .mp4-like URL in the page
-    final genericVideoUrl = RegExp(
-      'https?://[^"\']+\\.(mp4|mov|webm|m4v)',
-      caseSensitive: false,
-    ).firstMatch(html);
-
-    if (genericVideoUrl != null) {
-      return genericVideoUrl.group(0)!;
-    }
-
-    throw Exception('Could not resolve direct video URL from page.');
-  }
-
-  void _setError(String message) {
-    _state = _state.copyWith(
-      status: DownloadStatus.failed,
-      progress: 0,
-      errorMessage: message,
-    );
-    notifyListeners();
   }
 }
