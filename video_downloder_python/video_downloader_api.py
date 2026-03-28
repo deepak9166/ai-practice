@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import random
 import subprocess
 from typing import Any, Dict, Optional
 
@@ -78,11 +79,17 @@ app = FastAPI(
 )
 
 
+_DEFAULT_KEYWORDS = [
+    "funny", "comedy", "reels", "entertainment", "viral",
+    "trending", "memes", "humor", "lol", "shorts",
+]
+
+
 def upload_video_to_widcash(
     file_path: str,
     additional_data: str = "",
     keyword: str = "",
-    timeout: int =2000,
+    timeout: int = 2000,
 ) -> str:
     """
     Upload a video file to the WidCash Reel API and return the hosted URL.
@@ -98,6 +105,10 @@ def upload_video_to_widcash(
     Raises:
         HTTPException: If the upload fails.
     """
+    if not keyword or not keyword.strip():
+        keyword = random.choice(_DEFAULT_KEYWORDS)
+        logger.info("No keyword provided, using random: %s", keyword)
+
     logger.info("Uploading video to WidCash API via curl: %s", WIDCASH_UPLOAD_URL)
 
     cmd = [
@@ -179,12 +190,10 @@ async def instagram_download_endpoint(
             "username": metadata.get("author_username") or "",
         }
         additional_data = json.dumps(meta_for_upload, ensure_ascii=False, default=str)
-        keyword = ""
 
         video_url = upload_video_to_widcash(
             file_path=video_path,
             additional_data=additional_data,
-            keyword=keyword,
         )
 
         logger.info("IG Step 5: Upload complete. Hosted URL: %s", video_url)
@@ -247,7 +256,7 @@ async def snapchat_download_endpoint(
         video_url = upload_video_to_widcash(
             file_path=video_path,
             additional_data=additional_data,
-            keyword=payload.keyword or "funny, entertainment, snapchat",
+            keyword="",
         )
 
         logger.info("SC Step 5: Upload complete. Hosted URL: %s", video_url)

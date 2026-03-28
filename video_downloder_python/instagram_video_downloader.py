@@ -397,6 +397,7 @@ def upload_to_api(
     }
     data = {
         "metadata": json.dumps(metadata, ensure_ascii=False),
+        "Keyword": "funny",  # Placeholder for any keyword field the API might expect
     }
 
     try:

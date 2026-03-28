@@ -108,6 +108,34 @@ class VideoDownloaderViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Remove a pending task from the queue (before it starts uploading).
+  void removeTask(int index) {
+    if (index < 0 || index >= _state.tasks.length) return;
+    if (!_state.tasks[index].isPending) return;
+
+    final tasks = [..._state.tasks]..removeAt(index);
+    _state = _state.copyWith(tasks: tasks);
+    notifyListeners();
+  }
+
+  /// Retry a failed task — resets it to pending and re-starts the queue.
+  Future<void> retryTask(int index) async {
+    if (index < 0 || index >= _state.tasks.length) return;
+    if (!_state.tasks[index].isFailed) return;
+
+    _updateTask(
+      index,
+      DownloadTask(
+        url: _state.tasks[index].url,
+        platform: _state.tasks[index].platform,
+      ),
+    );
+
+    if (!_state.isProcessing) {
+      await _processQueue();
+    }
+  }
+
   void _updateTask(int index, DownloadTask updated) {
     final tasks = [..._state.tasks];
     tasks[index] = updated;

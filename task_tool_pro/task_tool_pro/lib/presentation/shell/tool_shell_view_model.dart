@@ -68,6 +68,12 @@ class ToolShellViewModel extends ChangeNotifier {
         description: 'Generate blog posts with ChatGPT or Gemini.',
         icon: Icons.edit_note_rounded,
       ),
+      ToolDefinition(
+        id: 'blog-writer',
+        name: 'Blog Writer',
+        description: 'Turn any URL into a ready-to-publish blog post.',
+        icon: Icons.newspaper_rounded,
+      ),
     ];
   }
 }

@@ -120,7 +120,16 @@ class _VideoDownloaderViewState extends ConsumerState<VideoDownloaderView> {
               itemCount: state.tasks.length,
               itemBuilder: (context, i) {
                 final task = state.tasks[i];
-                return _TaskTile(task: task, index: i);
+                return _TaskTile(
+                  task: task,
+                  index: i,
+                  onRetry: task.isFailed
+                      ? () => viewModel.retryTask(i)
+                      : null,
+                  onRemove: task.isPending
+                      ? () => viewModel.removeTask(i)
+                      : null,
+                );
               },
             ),
           ),
@@ -131,10 +140,17 @@ class _VideoDownloaderViewState extends ConsumerState<VideoDownloaderView> {
 }
 
 class _TaskTile extends StatelessWidget {
-  const _TaskTile({required this.task, required this.index});
+  const _TaskTile({
+    required this.task,
+    required this.index,
+    this.onRetry,
+    this.onRemove,
+  });
 
   final DownloadTask task;
   final int index;
+  final VoidCallback? onRetry;
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +208,18 @@ class _TaskTile extends StatelessWidget {
                     ),
                   );
                 },
+              ),
+            if (onRetry != null)
+              IconButton(
+                icon: Icon(Icons.refresh_rounded, size: 18, color: colorScheme.primary),
+                tooltip: 'Retry',
+                onPressed: onRetry,
+              ),
+            if (onRemove != null)
+              IconButton(
+                icon: Icon(Icons.close_rounded, size: 18, color: colorScheme.error),
+                tooltip: 'Remove from queue',
+                onPressed: onRemove,
               ),
           ],
         ),

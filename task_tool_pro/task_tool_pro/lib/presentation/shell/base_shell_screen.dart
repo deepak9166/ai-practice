@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/tools/tool_definition.dart';
 import '../tools/ai_blog_generator/ai_blog_generator_screen.dart';
+import '../tools/blog_writer/blog_writer_view.dart';
 import '../tools/video_downloader/video_downloader_view.dart';
 import 'tool_shell_view_model.dart';
 
@@ -503,6 +504,10 @@ class _ToolDetailView extends StatelessWidget {
 
                 if (tool.id == 'ai-blog-generator') {
                   return const AiBlogGeneratorScreen();
+                }
+
+                if (tool.id == 'blog-writer') {
+                  return const BlogWriterView();
                 }
 
                 // ---- Placeholder for unimplemented tools ----
