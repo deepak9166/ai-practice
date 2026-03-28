@@ -21,8 +21,7 @@ class AiBlogGeneratorScreen extends ConsumerStatefulWidget {
       _AiBlogGeneratorScreenState();
 }
 
-class _AiBlogGeneratorScreenState
-    extends ConsumerState<AiBlogGeneratorScreen> {
+class _AiBlogGeneratorScreenState extends ConsumerState<AiBlogGeneratorScreen> {
   @override
   void initState() {
     super.initState();
@@ -43,9 +42,7 @@ class _AiBlogGeneratorScreenState
         // ---- Tool header ----
         _ToolHeader(
           selectedProvider: vm.selectedProvider,
-          onSettingsTap: vm.isSettingsOpen
-              ? vm.closeSettings
-              : vm.openSettings,
+          onSettingsTap: vm.isSettingsOpen ? vm.closeSettings : vm.openSettings,
           settingsOpen: vm.isSettingsOpen,
         ),
         const SizedBox(height: 16),
@@ -64,12 +61,12 @@ class _AiBlogGeneratorScreenState
               child: vm.isSettingsOpen
                   ? const ApiSettingsPanel(key: ValueKey('settings'))
                   : vm.status == BlogGenerationStatus.success &&
-                          vm.blogPost != null
-                      ? BlogPreview(
-                          key: ValueKey(vm.blogPost!.generatedAt),
-                          post: vm.blogPost!,
-                        )
-                      : const BlogInputForm(key: ValueKey('input')),
+                        vm.blogPost != null
+                  ? BlogPreview(
+                      key: ValueKey(vm.blogPost!.generatedAt),
+                      post: vm.blogPost!,
+                    )
+                  : const BlogInputForm(key: ValueKey('input')),
             ),
           ),
         ),

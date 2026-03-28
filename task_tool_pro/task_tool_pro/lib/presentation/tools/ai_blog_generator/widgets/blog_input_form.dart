@@ -47,8 +47,8 @@ class BlogInputForm extends ConsumerWidget {
               onSelected: vm.isLoading
                   ? null
                   : (_) => ref
-                      .read(aiBlogGeneratorViewModelProvider)
-                      .updateTone(tone),
+                        .read(aiBlogGeneratorViewModelProvider)
+                        .updateTone(tone),
             );
           }).toList(),
         ),
@@ -68,8 +68,8 @@ class BlogInputForm extends ConsumerWidget {
               onSelected: vm.isLoading
                   ? null
                   : (_) => ref
-                      .read(aiBlogGeneratorViewModelProvider)
-                      .updateTargetWordCount(count),
+                        .read(aiBlogGeneratorViewModelProvider)
+                        .updateTargetWordCount(count),
             );
           }).toList(),
         ),
@@ -88,7 +88,7 @@ class BlogInputForm extends ConsumerWidget {
             onPressed: vm.isLoading
                 ? null
                 : () =>
-                    ref.read(aiBlogGeneratorViewModelProvider).generateBlog(),
+                      ref.read(aiBlogGeneratorViewModelProvider).generateBlog(),
             icon: vm.isLoading
                 ? SizedBox(
                     width: 18,
@@ -108,15 +108,19 @@ class BlogInputForm extends ConsumerWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 14, color: colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   'No ${vm.selectedProvider.displayName} key found. '
                   'Open Settings to add one.',
-                  style: textTheme.labelSmall
-                      ?.copyWith(color: colorScheme.onSurfaceVariant),
+                  style: textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],
@@ -145,16 +149,14 @@ class _ErrorBanner extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.error_outline_rounded,
-              size: 18, color: colorScheme.error),
+          Icon(Icons.error_outline_rounded, size: 18, color: colorScheme.error),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: colorScheme.onErrorContainer),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onErrorContainer,
+              ),
             ),
           ),
         ],

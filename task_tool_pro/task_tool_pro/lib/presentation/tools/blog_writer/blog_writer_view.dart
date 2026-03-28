@@ -63,71 +63,85 @@ class _Header extends StatelessWidget {
 
     return Row(
       children: [
-        // Mode badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: colorScheme.primaryContainer.withValues(alpha: 0.8),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                vm.mode == 'gemini'
-                    ? Icons.auto_awesome_rounded
-                    : Icons.computer_rounded,
-                size: 14,
-                color: colorScheme.onPrimaryContainer,
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            // Mode badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.8),
               ),
-              const SizedBox(width: 5),
-              Text(
-                vm.mode == 'gemini' ? 'Gemini' : 'Local (Ollama)',
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    vm.mode == 'gemini'
+                        ? Icons.auto_awesome_rounded
+                        : Icons.computer_rounded,
+                    size: 14,
+                    color: colorScheme.onPrimaryContainer,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    vm.mode == 'gemini' ? 'Gemini' : 'Local (Ollama)',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Token status
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: vm.hasPublishToken
+                    ? Colors.green.withValues(alpha: 0.15)
+                    : colorScheme.errorContainer.withValues(alpha: 0.5),
+              ),
+              child: Text(
+                vm.hasPublishToken ? 'Publish ready' : 'No publish token',
                 style: textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onPrimaryContainer,
+                  color: vm.hasPublishToken
+                      ? Colors.greenAccent.shade400
+                      : colorScheme.onErrorContainer,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Token status
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: vm.hasPublishToken
-                ? Colors.green.withValues(alpha: 0.15)
-                : colorScheme.errorContainer.withValues(alpha: 0.5),
-          ),
-          child: Text(
-            vm.hasPublishToken ? 'Publish ready' : 'No publish token',
-            style: textTheme.labelSmall?.copyWith(
-              color: vm.hasPublishToken
-                  ? Colors.greenAccent.shade400
-                  : colorScheme.onErrorContainer,
-              fontWeight: FontWeight.w600,
             ),
-          ),
+          ],
         ),
-        const Spacer(),
-        IconButton.filledTonal(
-          onPressed: vm.isHistoryOpen ? vm.closeHistory : vm.openHistory,
-          icon: Icon(
-            vm.isHistoryOpen ? Icons.close_rounded : Icons.history_rounded,
-            size: 18,
-          ),
-          tooltip: vm.isHistoryOpen ? 'Close history' : 'History',
-        ),
-        const SizedBox(width: 8),
-        IconButton.filledTonal(
-          onPressed: vm.isSettingsOpen ? vm.closeSettings : vm.openSettings,
-          icon: Icon(
-            vm.isSettingsOpen ? Icons.close_rounded : Icons.settings_rounded,
-            size: 18,
-          ),
-          tooltip: vm.isSettingsOpen ? 'Close settings' : 'Settings',
+        Spacer(),
+        // Push icons to the end — use a row so they stay grouped
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton.filledTonal(
+              onPressed: vm.isHistoryOpen ? vm.closeHistory : vm.openHistory,
+              icon: Icon(
+                vm.isHistoryOpen ? Icons.close_rounded : Icons.history_rounded,
+                size: 18,
+              ),
+              tooltip: vm.isHistoryOpen ? 'Close history' : 'History',
+            ),
+            const SizedBox(width: 8),
+            IconButton.filledTonal(
+              onPressed: vm.isSettingsOpen ? vm.closeSettings : vm.openSettings,
+              icon: Icon(
+                vm.isSettingsOpen
+                    ? Icons.close_rounded
+                    : Icons.settings_rounded,
+                size: 18,
+              ),
+              tooltip: vm.isSettingsOpen ? 'Close settings' : 'Settings',
+            ),
+          ],
         ),
       ],
     );
@@ -719,67 +733,76 @@ ${data.descriptionHindi}''';
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Slug URL (read-only)
+                // Slug URL + meta info (responsive)
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: colorScheme.surfaceContainerHighest.withValues(
                       alpha: 0.5,
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.link_rounded,
-                        size: 16,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: SelectableText(
-                          data.slugUrl,
-                          style: textTheme.labelMedium?.copyWith(
+                      // Slug URL row
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.link_rounded,
+                            size: 16,
                             color: colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.copy_rounded, size: 16),
-                        tooltip: 'Copy slug URL',
-                        onPressed: () {
-                          Clipboard.setData(
-                              ClipboardData(text: data.slugUrl));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Slug URL copied'),
-                              duration: Duration(seconds: 2),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: SelectableText(
+                              data.slugUrl,
+                              style: textTheme.labelMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          );
-                        },
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Category: ${data.articleType}',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (data.articleTagsDTOs.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        Text(
-                          'Tags: ${data.articleTagsDTOs.join(", ")}',
-                          style: textTheme.labelSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                      ],
+                          IconButton(
+                            icon: const Icon(Icons.copy_rounded, size: 16),
+                            tooltip: 'Copy slug URL',
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(text: data.slugUrl),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Slug URL copied'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // Category + Tags (wraps on narrow screens)
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            'Category: ${data.articleType}',
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          if (data.articleTagsDTOs.isNotEmpty)
+                            Text(
+                              'Tags: ${data.articleTagsDTOs.join(", ")}',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),

@@ -87,7 +87,9 @@ class _DesktopShell extends StatelessWidget {
               width: 260,
               margin: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.9),
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.9,
+                ),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: colorScheme.outlineVariant.withValues(alpha: 0.4),
@@ -123,18 +125,15 @@ class _DesktopShell extends StatelessWidget {
                           children: [
                             Text(
                               'My Tool',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.w600),
                             ),
                             Text(
                               'Multi-purpose workspace',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelMedium
+                              style: Theme.of(context).textTheme.labelMedium
                                   ?.copyWith(
-                                      color: colorScheme.onSurfaceVariant),
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
                             ),
                           ],
                         ),
@@ -200,7 +199,9 @@ class _DesktopShell extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      colorScheme.surfaceContainerHighest.withValues(alpha: 0.85),
+                      colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.85,
+                      ),
                       colorScheme.surface.withValues(alpha: 0.9),
                     ],
                   ),
@@ -290,10 +291,7 @@ class _MobileShell extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: _ToolDetailView(
-            tool: tools[selectedIndex],
-            isCompact: true,
-          ),
+          child: _ToolDetailView(tool: tools[selectedIndex], isCompact: true),
         ),
       ),
       bottomNavigationBar: NavigationBar(
@@ -341,21 +339,14 @@ class _SidebarItem extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(
-          vertical: dense ? 8 : 10,
-          horizontal: 12,
-        ),
+        padding: EdgeInsets.symmetric(vertical: dense ? 8 : 10, horizontal: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           color: background,
         ),
         child: Row(
           children: [
-            Icon(
-              tool.icon,
-              size: dense ? 18 : 20,
-              color: foreground,
-            ),
+            Icon(tool.icon, size: dense ? 18 : 20, color: foreground),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -366,9 +357,9 @@ class _SidebarItem extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: foreground,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: foreground,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   if (!dense) ...[
                     const SizedBox(height: 2),
@@ -376,10 +367,9 @@ class _SidebarItem extends StatelessWidget {
                       tool.description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: foreground.withValues(alpha: 0.85),
-                              ),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: foreground.withValues(alpha: 0.85),
+                      ),
                     ),
                   ],
                 ],
@@ -393,10 +383,7 @@ class _SidebarItem extends StatelessWidget {
 }
 
 class _ToolDetailView extends StatelessWidget {
-  const _ToolDetailView({
-    required this.tool,
-    required this.isCompact,
-  });
+  const _ToolDetailView({required this.tool, required this.isCompact});
 
   final ToolDefinition tool;
   final bool isCompact;
@@ -419,16 +406,10 @@ class _ToolDetailView extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: LinearGradient(
-                      colors: [
-                        colorScheme.primary,
-                        colorScheme.secondary,
-                      ],
+                      colors: [colorScheme.primary, colorScheme.secondary],
                     ),
                   ),
-                  child: Icon(
-                    tool.icon,
-                    color: Colors.white,
-                  ),
+                  child: Icon(tool.icon, color: Colors.white),
                 ),
                 const SizedBox(width: 12),
                 Column(
@@ -436,27 +417,23 @@ class _ToolDetailView extends StatelessWidget {
                   children: [
                     Text(
                       tool.name,
-                      style:
-                          Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       tool.description,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(999),
                 color: colorScheme.primary.withValues(alpha: 0.12),
@@ -475,9 +452,9 @@ class _ToolDetailView extends StatelessWidget {
                   Text(
                     'Ready',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      color: colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -523,8 +500,8 @@ class _ToolDetailView extends StatelessWidget {
                       'This is the main area where the selected tool will appear. '
                       'As you add more features, you can plug them into this workspace.',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     if (!isNarrow)
@@ -559,8 +536,7 @@ class _ToolDetailView extends StatelessWidget {
                           SizedBox(height: 12),
                           _PlaceholderCard(
                             title: 'Output',
-                            subtitle:
-                                'Results from your tool are shown here.',
+                            subtitle: 'Results from your tool are shown here.',
                             icon: Icons.outbox_rounded,
                           ),
                         ],
@@ -610,11 +586,7 @@ class _PlaceholderCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
               color: colorScheme.primary.withValues(alpha: 0.15),
             ),
-            child: Icon(
-              icon,
-              size: 18,
-              color: colorScheme.primary,
-            ),
+            child: Icon(icon, size: 18, color: colorScheme.primary),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -623,16 +595,16 @@ class _PlaceholderCard extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
