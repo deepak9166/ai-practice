@@ -18,12 +18,13 @@ import logging
 import os
 import random
 import subprocess
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, HttpUrl
 
+from blog_processor import BlogProcessError, process_blog
 from instagram_video_downloader import (
     InstagramDownloadError,
     cleanup_directory,
@@ -68,12 +69,21 @@ class SnapchatDownloadResponse(BaseModel):
     metadata: Dict[str, Any]
 
 
+class ProcessBlogRequest(BaseModel):
+    url: HttpUrl
+    mode: str = "local"  # "local" (Ollama) or "gemini"
+    category_id: int = 0
+    tags: List[int] = []
+    gemini_api_key: Optional[str] = None
+
+
 app = FastAPI(
-    title="Video Download API",
+    title="Video Download & Blog Processor API",
     description=(
-        "Download Instagram and Snapchat videos locally and return the local file path + metadata.\n\n"
+        "Download Instagram/Snapchat videos and process blogs with AI.\n\n"
         "- POST /instagram/download\n"
-        "- POST /snapchat/download"
+        "- POST /snapchat/download\n"
+        "- POST /process-blog"
     ),
     version="1.0.0",
 )
@@ -284,4 +294,38 @@ async def snapchat_download_endpoint(
         # Always clean up temp directory
         if working_dir:
             cleanup_directory(working_dir)
+
+
+# ---------------------------------------------------------------------------
+# Blog Processor
+# ---------------------------------------------------------------------------
+
+@app.post("/process-blog", tags=["blog"])
+async def process_blog_endpoint(payload: ProcessBlogRequest):
+    """
+    Fetch a blog URL, extract content, rewrite with AI (Ollama or Gemini),
+    and return structured JSON for publishing.
+    """
+    logger.info("Blog Step 1: Received /process-blog — url=%s mode=%s", payload.url, payload.mode)
+
+    if payload.mode not in ("local", "gemini"):
+        raise HTTPException(status_code=400, detail="mode must be 'local' or 'gemini'")
+
+    try:
+        result = process_blog(
+            url=str(payload.url),
+            mode=payload.mode,
+            category_id=payload.category_id,
+            tags=payload.tags,
+            gemini_api_key=payload.gemini_api_key,
+        )
+        logger.info("Blog Step 2: Done. Title: %s", result.get("data", {}).get("title", "")[:60])
+        return result
+
+    except BlogProcessError as exc:
+        logger.error("Blog processing error: %s", exc)
+        return {"success": False, "message": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Unexpected error in /process-blog: %s", exc)
+        return {"success": False, "message": "Internal server error"}
 
