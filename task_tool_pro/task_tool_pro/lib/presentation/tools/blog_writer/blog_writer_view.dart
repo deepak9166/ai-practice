@@ -2,17 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../domain/blog/blog_article.dart';
 import '../../providers/app_providers.dart';
 import 'blog_writer_view_model.dart';
 
-/// Root screen for the Blog Writer (URL-to-Blog) tool.
-///
-/// Layout:
-///   - Header row: token status badge + settings icon button
-///   - Settings panel (shown inline when open): token field + save button
-///   - URL input field
-///   - Generate button
-///   - Result / loading / error area
 class BlogWriterView extends ConsumerStatefulWidget {
   const BlogWriterView({super.key});
 
@@ -21,31 +14,12 @@ class BlogWriterView extends ConsumerStatefulWidget {
 }
 
 class _BlogWriterViewState extends ConsumerState<BlogWriterView> {
-  late final TextEditingController _urlController;
-  late final TextEditingController _tokenController;
-
   @override
   void initState() {
     super.initState();
-    _urlController = TextEditingController();
-    _tokenController = TextEditingController();
-
-    // Load the persisted token after the first frame.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final vm = ref.read(blogWriterViewModelProvider);
-      await vm.loadStoredToken();
-      // Sync the controller text with the loaded token.
-      if (mounted) {
-        _tokenController.text = vm.apiToken;
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(blogWriterViewModelProvider).loadStoredKeys();
     });
-  }
-
-  @override
-  void dispose() {
-    _urlController.dispose();
-    _tokenController.dispose();
-    super.dispose();
   }
 
   @override
@@ -55,54 +29,32 @@ class _BlogWriterViewState extends ConsumerState<BlogWriterView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ---- Header: token badge + settings button ----
-        _HeaderRow(
-          hasToken: vm.hasToken,
-          settingsOpen: vm.isSettingsOpen,
-          onSettingsTap: vm.isSettingsOpen ? vm.closeSettings : vm.openSettings,
-        ),
+        _Header(vm: vm),
         const SizedBox(height: 12),
-
-        // ---- Inline settings panel ----
-        AnimatedSize(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeInOut,
-          child: vm.isSettingsOpen
-              ? _TokenSettingsPanel(tokenController: _tokenController)
-              : const SizedBox.shrink(),
-        ),
-
-        // ---- URL input ----
-        _UrlInputSection(urlController: _urlController),
-        const SizedBox(height: 16),
-
-        // ---- Generate button ----
-        _GenerateButton(urlController: _urlController),
-        const SizedBox(height: 16),
-
-        // ---- Result area ----
         Expanded(
-          child: _ResultArea(vm: vm),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: vm.isHistoryOpen
+                ? const _HistoryPanel(key: ValueKey('history'))
+                : vm.isSettingsOpen
+                ? const _SettingsPanel(key: ValueKey('settings'))
+                : vm.hasResult
+                ? const _PreviewPanel(key: ValueKey('preview'))
+                : const _InputForm(key: ValueKey('input')),
+          ),
         ),
       ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Header row
-// ---------------------------------------------------------------------------
+// =============================================================================
+// Header
+// =============================================================================
 
-class _HeaderRow extends StatelessWidget {
-  const _HeaderRow({
-    required this.hasToken,
-    required this.settingsOpen,
-    required this.onSettingsTap,
-  });
-
-  final bool hasToken;
-  final bool settingsOpen;
-  final VoidCallback onSettingsTap;
+class _Header extends StatelessWidget {
+  const _Header({required this.vm});
+  final BlogWriterViewModel vm;
 
   @override
   Widget build(BuildContext context) {
@@ -111,61 +63,83 @@ class _HeaderRow extends StatelessWidget {
 
     return Row(
       children: [
-        // Token status badge
+        // Mode badge
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(999),
-            color: hasToken
-                ? colorScheme.primaryContainer.withValues(alpha: 0.8)
-                : colorScheme.errorContainer.withValues(alpha: 0.7),
+            color: colorScheme.primaryContainer.withValues(alpha: 0.8),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                hasToken ? Icons.vpn_key_rounded : Icons.vpn_key_off_rounded,
+                vm.mode == 'gemini'
+                    ? Icons.auto_awesome_rounded
+                    : Icons.computer_rounded,
                 size: 14,
-                color: hasToken
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onErrorContainer,
+                color: colorScheme.onPrimaryContainer,
               ),
               const SizedBox(width: 5),
               Text(
-                hasToken ? 'Token set' : 'No token',
+                vm.mode == 'gemini' ? 'Gemini' : 'Local (Ollama)',
                 style: textTheme.labelSmall?.copyWith(
-                  color: hasToken
-                      ? colorScheme.onPrimaryContainer
-                      : colorScheme.onErrorContainer,
+                  color: colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
         ),
+        const SizedBox(width: 8),
+        // Token status
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: vm.hasPublishToken
+                ? Colors.green.withValues(alpha: 0.15)
+                : colorScheme.errorContainer.withValues(alpha: 0.5),
+          ),
+          child: Text(
+            vm.hasPublishToken ? 'Publish ready' : 'No publish token',
+            style: textTheme.labelSmall?.copyWith(
+              color: vm.hasPublishToken
+                  ? Colors.greenAccent.shade400
+                  : colorScheme.onErrorContainer,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
         const Spacer(),
-        // Settings icon button
         IconButton.filledTonal(
-          onPressed: onSettingsTap,
+          onPressed: vm.isHistoryOpen ? vm.closeHistory : vm.openHistory,
           icon: Icon(
-            settingsOpen ? Icons.close_rounded : Icons.settings_rounded,
+            vm.isHistoryOpen ? Icons.close_rounded : Icons.history_rounded,
             size: 18,
           ),
-          tooltip: settingsOpen ? 'Close settings' : 'Configure API token',
+          tooltip: vm.isHistoryOpen ? 'Close history' : 'History',
+        ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          onPressed: vm.isSettingsOpen ? vm.closeSettings : vm.openSettings,
+          icon: Icon(
+            vm.isSettingsOpen ? Icons.close_rounded : Icons.settings_rounded,
+            size: 18,
+          ),
+          tooltip: vm.isSettingsOpen ? 'Close settings' : 'Settings',
         ),
       ],
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Token settings panel
-// ---------------------------------------------------------------------------
+// =============================================================================
+// Settings Panel
+// =============================================================================
 
-class _TokenSettingsPanel extends ConsumerWidget {
-  const _TokenSettingsPanel({required this.tokenController});
-
-  final TextEditingController tokenController;
+class _SettingsPanel extends ConsumerWidget {
+  const _SettingsPanel({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -173,412 +147,723 @@ class _TokenSettingsPanel extends ConsumerWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.lock_rounded,
-                  size: 16,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'API Token',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'This token is sent as a Bearer header to the blog generation API. '
-              'It is stored in secure storage and survives app restarts.',
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: tokenController,
-              obscureText: !vm.showToken,
-              onChanged: (v) {
-                ref.read(blogWriterViewModelProvider).updateApiToken(v);
-              },
-              decoration: InputDecoration(
-                hintText: 'Enter your API token...',
-                filled: true,
-                fillColor: colorScheme.surface,
-                prefixIcon: const Icon(Icons.key_rounded, size: 18),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    vm.showToken
-                        ? Icons.visibility_off_rounded
-                        : Icons.visibility_rounded,
-                    size: 18,
-                  ),
-                  onPressed: () =>
-                      ref.read(blogWriterViewModelProvider).toggleTokenVisibility(),
-                  tooltip: vm.showToken ? 'Hide token' : 'Show token',
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                FilledButton.icon(
-                  onPressed: () async {
-                    ref.read(blogWriterViewModelProvider).updateApiToken(
-                          tokenController.text,
-                        );
-                    await ref.read(blogWriterViewModelProvider).saveToken();
-                  },
-                  icon: const Icon(Icons.save_rounded, size: 16),
-                  label: const Text('Save Token'),
-                ),
-                const SizedBox(width: 12),
-                if (vm.apiToken.isNotEmpty)
-                  TextButton.icon(
-                    onPressed: () async {
-                      tokenController.clear();
-                      await ref.read(blogWriterViewModelProvider).clearToken();
-                    },
-                    icon: const Icon(Icons.delete_outline_rounded, size: 16),
-                    label: const Text('Clear'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: colorScheme.error,
-                    ),
-                  ),
-                const Spacer(),
-                if (vm.tokenSaved)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        size: 16,
-                        color: Colors.green,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Saved',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// URL input section
-// ---------------------------------------------------------------------------
-
-class _UrlInputSection extends ConsumerWidget {
-  const _UrlInputSection({required this.urlController});
-
-  final TextEditingController urlController;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Source URL',
-          style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        TextField(
-          controller: urlController,
-          keyboardType: TextInputType.url,
-          autocorrect: false,
-          onChanged: (v) =>
-              ref.read(blogWriterViewModelProvider).updateUrl(v),
-          decoration: InputDecoration(
-            hintText: 'https://example.com/some-article',
-            filled: true,
-            fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            prefixIcon: const Icon(Icons.link_rounded, size: 18),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.clear_rounded, size: 18),
-              onPressed: () {
-                urlController.clear();
-                ref.read(blogWriterViewModelProvider).updateUrl('');
-              },
-              tooltip: 'Clear URL',
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: colorScheme.outlineVariant,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: colorScheme.primary,
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Generate button
-// ---------------------------------------------------------------------------
-
-class _GenerateButton extends ConsumerWidget {
-  const _GenerateButton({required this.urlController});
-
-  final TextEditingController urlController;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final vm = ref.watch(blogWriterViewModelProvider);
-
-    return SizedBox(
-      width: double.infinity,
-      height: 48,
-      child: FilledButton.icon(
-        onPressed: vm.isLoading
-            ? null
-            : () {
-                // Sync controller text into VM before generating.
-                ref.read(blogWriterViewModelProvider).updateUrl(urlController.text);
-                ref.read(blogWriterViewModelProvider).generateBlog();
-              },
-        icon: vm.isLoading
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              )
-            : const Icon(Icons.auto_awesome_rounded, size: 18),
-        label: Text(vm.isLoading ? 'Generating...' : 'Generate Blog'),
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Result area
-// ---------------------------------------------------------------------------
-
-class _ResultArea extends StatelessWidget {
-  const _ResultArea({required this.vm});
-
-  final BlogWriterViewModel vm;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-
-    if (vm.isLoading) {
-      return _ResultContainer(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              CircularProgressIndicator(color: colorScheme.primary),
-              const SizedBox(height: 16),
-              Text(
-                'Generating blog content...',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
+              Icon(Icons.key_rounded, color: colorScheme.primary, size: 20),
+              const SizedBox(width: 8),
+              Text('API Settings', style: textTheme.titleSmall),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.close_rounded, size: 20),
+                tooltip: 'Close settings',
+                onPressed: vm.closeSettings,
               ),
             ],
           ),
-        ),
-      );
-    }
-
-    if (vm.hasError) {
-      return _ResultContainer(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: 40,
-                  color: colorScheme.error,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Something went wrong',
-                  style: textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.error,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  vm.errorMessage ?? 'An unknown error occurred.',
-                  textAlign: TextAlign.center,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+          const SizedBox(height: 4),
+          Text(
+            'Keys are stored securely on this device.',
+            style: textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
-        ),
-      );
-    }
+          const SizedBox(height: 16),
 
-    if (vm.hasResult) {
-      return _BlogResultContent(content: vm.blogContent!);
-    }
-
-    // ---- Empty / idle state ----
-    return _ResultContainer(
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.article_outlined,
-              size: 48,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+          // Server URL
+          TextFormField(
+            initialValue: vm.serverUrl,
+            onChanged: (v) =>
+                ref.read(blogWriterViewModelProvider).updateServerUrl(v),
+            decoration: const InputDecoration(
+              labelText: 'Python Server URL',
+              hintText: 'http://localhost:8000',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.dns_rounded, size: 20),
             ),
-            const SizedBox(height: 12),
-            Text(
-              'Generated blog will appear here',
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+          ),
+          const SizedBox(height: 12),
+
+          // Gemini API Key
+          TextFormField(
+            initialValue: vm.geminiApiKey,
+            obscureText: !vm.showGeminiKey,
+            onChanged: (v) =>
+                ref.read(blogWriterViewModelProvider).updateGeminiApiKey(v),
+            decoration: InputDecoration(
+              labelText: 'Gemini API Key',
+              hintText: 'AIza...',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  vm.showGeminiKey
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                  size: 20,
+                ),
+                onPressed: () => ref
+                    .read(blogWriterViewModelProvider)
+                    .toggleGeminiKeyVisibility(),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Enter a URL above and tap Generate Blog.',
-              style: textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Required only for Gemini mode. Get from Google AI Studio.',
+            style: textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Publish Auth Token
+          TextFormField(
+            initialValue: vm.publishToken,
+            obscureText: !vm.showPublishToken,
+            onChanged: (v) =>
+                ref.read(blogWriterViewModelProvider).updatePublishToken(v),
+            decoration: InputDecoration(
+              labelText: 'Publish Auth Token (preptm)',
+              hintText: 'Bearer token for publishing...',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  vm.showPublishToken
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                  size: 20,
+                ),
+                onPressed: () => ref
+                    .read(blogWriterViewModelProvider)
+                    .togglePublishTokenVisibility(),
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+
+          // Save
+          Row(
+            children: [
+              FilledButton.icon(
+                onPressed: () =>
+                    ref.read(blogWriterViewModelProvider).saveKeys(),
+                icon: const Icon(Icons.save_rounded, size: 18),
+                label: const Text('Save Settings'),
+              ),
+              const SizedBox(width: 12),
+              if (vm.keysSaved)
+                Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.greenAccent.shade400,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Saved',
+                      style: textTheme.labelMedium?.copyWith(
+                        color: Colors.greenAccent.shade400,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-// ---------------------------------------------------------------------------
-// Blog result content — scrollable, with copy and clear actions
-// ---------------------------------------------------------------------------
+// =============================================================================
+// Input Form
+// =============================================================================
 
-class _BlogResultContent extends ConsumerWidget {
-  const _BlogResultContent({required this.content});
-
-  final String content;
+class _InputForm extends ConsumerStatefulWidget {
+  const _InputForm({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_InputForm> createState() => _InputFormState();
+}
+
+class _InputFormState extends ConsumerState<_InputForm> {
+  final _urlController = TextEditingController();
+
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = ref.watch(blogWriterViewModelProvider);
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // URL
+          TextField(
+            controller: _urlController,
+            onChanged: (v) =>
+                ref.read(blogWriterViewModelProvider).updateUrl(v),
+            keyboardType: TextInputType.url,
+            autocorrect: false,
+            decoration: InputDecoration(
+              labelText: 'Blog URL',
+              hintText: 'https://example.com/blog-post',
+              border: const OutlineInputBorder(),
+              prefixIcon: const Icon(Icons.link_rounded, size: 20),
+              suffixIcon: _urlController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 18),
+                      onPressed: () {
+                        _urlController.clear();
+                        ref.read(blogWriterViewModelProvider).updateUrl('');
+                      },
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Mode toggle
+          Text('AI Mode', style: textTheme.labelMedium),
+          const SizedBox(height: 8),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(
+                value: 'local',
+                label: Text('Local (Ollama)'),
+                icon: Icon(Icons.computer_rounded, size: 18),
+              ),
+              ButtonSegment(
+                value: 'gemini',
+                label: Text('Gemini'),
+                icon: Icon(Icons.auto_awesome_rounded, size: 18),
+              ),
+            ],
+            selected: {vm.mode},
+            onSelectionChanged: vm.isLoading
+                ? null
+                : (s) =>
+                      ref.read(blogWriterViewModelProvider).updateMode(s.first),
+          ),
+          if (vm.mode == 'gemini' && !vm.hasGeminiKey) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 14,
+                  color: colorScheme.error,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'No Gemini API key. Open Settings to add one.',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: colorScheme.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 16),
+
+          // Article Type dropdown
+          if (vm.isLoadingDropdowns)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 8),
+                  Text('Loading article types & tags...'),
+                ],
+              ),
+            )
+          else if (vm.dropdownError != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 16,
+                    color: colorScheme.error,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      vm.dropdownError!,
+                      style: textTheme.labelSmall?.copyWith(
+                        color: colorScheme.error,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => ref
+                        .read(blogWriterViewModelProvider)
+                        .refreshDropdowns(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            // Article Type (single select) with refresh
+            Row(
+              children: [
+                Text('Article Type', style: textTheme.labelMedium),
+                const SizedBox(width: 4),
+                if (vm.isLoadingDropdowns)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  InkWell(
+                    onTap: () => ref
+                        .read(blogWriterViewModelProvider)
+                        .refreshDropdowns(),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Icon(
+                      Icons.refresh_rounded,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            DropdownButtonFormField<int>(
+              initialValue:
+                  vm.articleTypes.any(
+                    (e) => e.value == vm.selectedArticleTypeId,
+                  )
+                  ? vm.selectedArticleTypeId
+                  : null,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.category_rounded, size: 20),
+              ),
+              isExpanded: true,
+              items: vm.articleTypes
+                  .map(
+                    (item) => DropdownMenuItem<int>(
+                      value: item.value,
+                      child: Text(item.text),
+                    ),
+                  )
+                  .toList(),
+              onChanged: vm.isLoading
+                  ? null
+                  : (v) => ref
+                        .read(blogWriterViewModelProvider)
+                        .selectArticleType(v),
+            ),
+            const SizedBox(height: 16),
+
+            // Tags (multi-select chips) with refresh
+            Row(
+              children: [
+                Text('Tags', style: textTheme.labelMedium),
+                const SizedBox(width: 4),
+                if (!vm.isLoadingDropdowns)
+                  InkWell(
+                    onTap: () => ref
+                        .read(blogWriterViewModelProvider)
+                        .refreshDropdowns(),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Icon(
+                      Icons.refresh_rounded,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (vm.allTags.isEmpty)
+              Text(
+                'No tags available',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              )
+            else
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: vm.allTags.map((tag) {
+                  final selected = vm.selectedTagIds.contains(tag.value);
+                  return FilterChip(
+                    label: Text(tag.text),
+                    selected: selected,
+                    selectedColor: colorScheme.primaryContainer,
+                    onSelected: vm.isLoading
+                        ? null
+                        : (_) => ref
+                              .read(blogWriterViewModelProvider)
+                              .toggleTag(tag.value),
+                  );
+                }).toList(),
+              ),
+          ],
+          const SizedBox(height: 24),
+
+          // Error
+          if (vm.hasError && vm.errorMessage != null) ...[
+            _ErrorBanner(message: vm.errorMessage!),
+            const SizedBox(height: 16),
+          ],
+
+          // Generate button
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: vm.isLoading
+                  ? null
+                  : () {
+                      ref
+                          .read(blogWriterViewModelProvider)
+                          .updateUrl(_urlController.text);
+                      ref.read(blogWriterViewModelProvider).generateBlog();
+                    },
+              icon: vm.isLoading
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.auto_awesome_rounded, size: 18),
+              label: Text(vm.isLoading ? 'Generating...' : 'Generate Blog'),
+            ),
+          ),
+          if (vm.isLoading) ...[
+            const SizedBox(height: 12),
+            Text(
+              'AI processing can take 30-120 seconds...',
+              style: textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================================
+// Preview Panel
+// =============================================================================
+
+class _PreviewPanel extends ConsumerStatefulWidget {
+  const _PreviewPanel({super.key});
+
+  @override
+  ConsumerState<_PreviewPanel> createState() => _PreviewPanelState();
+}
+
+class _PreviewPanelState extends ConsumerState<_PreviewPanel> {
+  bool _copyConfirmed = false;
+
+  void _copyAll() {
+    final data = ref.read(blogWriterViewModelProvider).articleData;
+    if (data == null) return;
+
+    final text =
+        '''Title: ${data.title}
+Title (Hindi): ${data.titleHindi}
+Slug: ${data.slugUrl}
+Keywords: ${data.keywords}
+Keywords (Hindi): ${data.keywordHindi}
+Summary: ${data.summary}
+Summary (Hindi): ${data.summaryHindi}
+
+--- Description ---
+${data.description}
+
+--- Description (Hindi) ---
+${data.descriptionHindi}''';
+
+    Clipboard.setData(ClipboardData(text: text));
+    setState(() => _copyConfirmed = true);
+    Future<void>.delayed(const Duration(seconds: 2)).then((_) {
+      if (mounted) setState(() => _copyConfirmed = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vm = ref.watch(blogWriterViewModelProvider);
+    final BlogArticleData? data = vm.articleData;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    if (data == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('No article data available.', style: textTheme.bodyMedium),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () =>
+                  ref.read(blogWriterViewModelProvider).clearResult(),
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              label: const Text('Back'),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Action bar
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children: [
-            Icon(
-              Icons.check_circle_outline_rounded,
-              size: 16,
-              color: Colors.green,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              'Blog generated',
-              style: textTheme.labelMedium?.copyWith(
-                color: Colors.green,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Spacer(),
-            // Copy button
-            IconButton.filledTonal(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: content));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Blog content copied to clipboard.'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy_rounded, size: 16),
-              tooltip: 'Copy to clipboard',
-            ),
-            const SizedBox(width: 8),
-            // Clear button
-            IconButton.filledTonal(
+            OutlinedButton.icon(
               onPressed: () =>
                   ref.read(blogWriterViewModelProvider).clearResult(),
-              icon: const Icon(Icons.refresh_rounded, size: 16),
-              tooltip: 'Generate a new blog',
+              icon: const Icon(Icons.arrow_back_rounded, size: 16),
+              label: const Text('Back'),
+            ),
+            OutlinedButton.icon(
+              onPressed: vm.isLoading
+                  ? null
+                  : () => ref.read(blogWriterViewModelProvider).generateBlog(),
+              icon: vm.isLoading
+                  ? SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: colorScheme.primary,
+                      ),
+                    )
+                  : const Icon(Icons.refresh_rounded, size: 16),
+              label: Text(vm.isLoading ? 'Regenerating...' : 'Regenerate'),
+            ),
+            FilledButton.tonalIcon(
+              onPressed: _copyAll,
+              icon: Icon(
+                _copyConfirmed ? Icons.check_rounded : Icons.copy_all_rounded,
+                size: 16,
+              ),
+              label: Text(_copyConfirmed ? 'Copied!' : 'Copy all'),
+            ),
+            FilledButton.icon(
+              onPressed: vm.isPublishing
+                  ? null
+                  : () => ref.read(blogWriterViewModelProvider).publishBlog(),
+              icon: vm.isPublishing
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.publish_rounded, size: 16),
+              label: Text(vm.isPublishing ? 'Publishing...' : 'Publish'),
             ),
           ],
         ),
         const SizedBox(height: 8),
-        // Scrollable content
+
+        // Publish feedback
+        if (vm.publishSuccess)
+          _FeedbackBanner(
+            message: 'Blog published successfully!',
+            isError: false,
+            onDismiss: () =>
+                ref.read(blogWriterViewModelProvider).clearPublishState(),
+          ),
+        if (vm.publishError != null)
+          _FeedbackBanner(
+            message: vm.publishError!,
+            isError: true,
+            onDismiss: () =>
+                ref.read(blogWriterViewModelProvider).clearPublishState(),
+          ),
+        const SizedBox(height: 4),
+
+        // Scrollable article preview
         Expanded(
-          child: _ResultContainer(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: SelectableText(
-                content,
-                style: textTheme.bodyMedium?.copyWith(
-                  height: 1.7,
-                  color: colorScheme.onSurface,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Slug URL (read-only)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.5,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.link_rounded,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: SelectableText(
+                          data.slugUrl,
+                          style: textTheme.labelMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.copy_rounded, size: 16),
+                        tooltip: 'Copy slug URL',
+                        onPressed: () {
+                          Clipboard.setData(
+                              ClipboardData(text: data.slugUrl));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Slug URL copied'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Category: ${data.articleType}',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (data.articleTagsDTOs.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          'Tags: ${data.articleTagsDTOs.join(", ")}',
+                          style: textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
-              ),
+                const SizedBox(height: 12),
+
+                // Title
+                _EditableSection(
+                  label: 'Title',
+                  initialValue: data.title,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleTitle(v),
+                  style: textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _EditableSection(
+                  label: 'Title (Hindi)',
+                  initialValue: data.titleHindi,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleTitleHindi(v),
+                ),
+                const SizedBox(height: 16),
+
+                // Keywords
+                _EditableSection(
+                  label: 'Keywords',
+                  initialValue: data.keywords,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleKeywords(v),
+                ),
+                const SizedBox(height: 8),
+                _EditableSection(
+                  label: 'Keywords (Hindi)',
+                  initialValue: data.keywordHindi,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleKeywordHindi(v),
+                ),
+                const SizedBox(height: 16),
+
+                // Summary
+                _EditableSection(
+                  label: 'Summary',
+                  initialValue: data.summary,
+                  maxLines: 3,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleSummary(v),
+                ),
+                const SizedBox(height: 8),
+                _EditableSection(
+                  label: 'Summary (Hindi)',
+                  initialValue: data.summaryHindi,
+                  maxLines: 3,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleSummaryHindi(v),
+                ),
+                const SizedBox(height: 16),
+
+                // Description (HTML)
+                _EditableSection(
+                  label: 'Description (HTML)',
+                  initialValue: data.description,
+                  maxLines: 10,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleDescription(v),
+                ),
+                const SizedBox(height: 8),
+                _EditableSection(
+                  label: 'Description Hindi (HTML)',
+                  initialValue: data.descriptionHindi,
+                  maxLines: 10,
+                  onChanged: (v) => ref
+                      .read(blogWriterViewModelProvider)
+                      .updateArticleDescriptionHindi(v),
+                ),
+                const SizedBox(height: 16),
+              ],
             ),
           ),
         ),
@@ -587,29 +872,383 @@ class _BlogResultContent extends ConsumerWidget {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Shared container decoration
-// ---------------------------------------------------------------------------
+// =============================================================================
+// History Panel
+// =============================================================================
 
-class _ResultContainer extends StatelessWidget {
-  const _ResultContainer({required this.child});
+class _HistoryPanel extends ConsumerWidget {
+  const _HistoryPanel({super.key});
 
-  final Widget child;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final vm = ref.watch(blogWriterViewModelProvider);
+    final history = vm.history;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.history_rounded, color: colorScheme.primary, size: 20),
+            const SizedBox(width: 8),
+            Text('Blog History', style: textTheme.titleSmall),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(999),
+                color: colorScheme.primaryContainer.withValues(alpha: 0.6),
+              ),
+              child: Text(
+                '${history.length}',
+                style: textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.close_rounded, size: 20),
+              tooltip: 'Close history',
+              onPressed: vm.closeHistory,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (history.isEmpty)
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.article_outlined,
+                    size: 48,
+                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No blogs generated yet',
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.6,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Expanded(
+            child: ListView.separated(
+              itemCount: history.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final entry = history[index];
+                final isPublished = entry.status == 'published';
+                final date = entry.createdAt;
+                final dateStr =
+                    '${date.day.toString().padLeft(2, '0')}/'
+                    '${date.month.toString().padLeft(2, '0')}/'
+                    '${date.year}  '
+                    '${date.hour.toString().padLeft(2, '0')}:'
+                    '${date.minute.toString().padLeft(2, '0')}';
+
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.4,
+                    ),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title + status
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              entry.title.isNotEmpty ? entry.title : 'Untitled',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              color: isPublished
+                                  ? Colors.green.withValues(alpha: 0.15)
+                                  : colorScheme.primaryContainer.withValues(
+                                      alpha: 0.5,
+                                    ),
+                            ),
+                            child: Text(
+                              isPublished ? 'Published' : 'Generated',
+                              style: textTheme.labelSmall?.copyWith(
+                                color: isPublished
+                                    ? Colors.greenAccent.shade400
+                                    : colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      // URL
+                      Text(
+                        entry.url,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      // Date + copy slug
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            dateStr,
+                            style: textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (entry.slugUrl.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () {
+                                Clipboard.setData(
+                                  ClipboardData(text: entry.slugUrl),
+                                );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Slug URL copied'),
+                                    duration: Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.copy_rounded, size: 14),
+                              label: Text(
+                                entry.slugUrl,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                ),
+                                textStyle: textTheme.labelSmall,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+// =============================================================================
+// Shared widgets
+// =============================================================================
+
+class _EditableSection extends StatefulWidget {
+  const _EditableSection({
+    required this.label,
+    required this.initialValue,
+    required this.onChanged,
+    this.style,
+    this.maxLines = 1,
+  });
+
+  final String label;
+  final String initialValue;
+  final ValueChanged<String> onChanged;
+  final TextStyle? style;
+  final int maxLines;
+
+  @override
+  State<_EditableSection> createState() => _EditableSectionState();
+}
+
+class _EditableSectionState extends State<_EditableSection> {
+  late final TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void didUpdateWidget(_EditableSection old) {
+    super.didUpdateWidget(old);
+    if (old.initialValue != widget.initialValue &&
+        _ctrl.text != widget.initialValue) {
+      _ctrl.text = widget.initialValue;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      width: double.infinity,
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
         border: Border.all(
           color: colorScheme.outlineVariant.withValues(alpha: 0.4),
         ),
       ),
-      child: child,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.label,
+            style: textTheme.labelSmall?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          TextField(
+            controller: _ctrl,
+            onChanged: widget.onChanged,
+            maxLines: widget.maxLines == 1 ? null : widget.maxLines,
+            minLines: 1,
+            style: widget.style ?? textTheme.bodyMedium,
+            decoration: const InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  const _ErrorBanner({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 18, color: colorScheme.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onErrorContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeedbackBanner extends StatelessWidget {
+  const _FeedbackBanner({
+    required this.message,
+    required this.isError,
+    required this.onDismiss,
+  });
+
+  final String message;
+  final bool isError;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final color = isError ? colorScheme.error : Colors.greenAccent.shade400;
+    final bgColor = isError
+        ? colorScheme.errorContainer.withValues(alpha: 0.3)
+        : Colors.greenAccent.shade700.withValues(alpha: 0.15);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isError ? Icons.error_outline_rounded : Icons.check_circle_rounded,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: textTheme.bodySmall?.copyWith(color: color),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 16),
+            onPressed: onDismiss,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
     );
   }
 }
