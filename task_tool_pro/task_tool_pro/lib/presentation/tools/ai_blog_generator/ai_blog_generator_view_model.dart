@@ -23,8 +23,8 @@ class AiBlogGeneratorViewModel extends ChangeNotifier {
   AiBlogGeneratorViewModel({
     BlogAiService? service,
     FlutterSecureStorage? storage,
-  })  : _service = service ?? BlogAiService(),
-        _storage = storage ?? const FlutterSecureStorage();
+  }) : _service = service ?? BlogAiService(),
+       _storage = storage ?? const FlutterSecureStorage();
 
   final BlogAiService _service;
   final FlutterSecureStorage _storage;
@@ -87,7 +87,8 @@ class AiBlogGeneratorViewModel extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
 
   bool get isLoading => _status == BlogGenerationStatus.loading;
-  bool get hasResult => _status == BlogGenerationStatus.success && _blogPost != null;
+  bool get hasResult =>
+      _status == BlogGenerationStatus.success && _blogPost != null;
   bool get hasError => _status == BlogGenerationStatus.error;
 
   bool get isPublishing => _isPublishing;
@@ -207,8 +208,7 @@ class AiBlogGeneratorViewModel extends ChangeNotifier {
     await _storage.write(key: _kAuthTokenKey, value: _authToken.trim());
     await _storage.write(key: _kOllamaModelKey, value: _ollamaModel.trim());
     await _storage.write(key: _kOllamaUrlKey, value: _ollamaBaseUrl.trim());
-    await _storage.write(
-        key: _kProviderKey, value: _selectedProvider.name);
+    await _storage.write(key: _kProviderKey, value: _selectedProvider.name);
     _keysSaved = true;
     notifyListeners();
   }
@@ -291,8 +291,9 @@ class AiBlogGeneratorViewModel extends ChangeNotifier {
   void updateSectionContent(int index, String newContent) {
     if (_blogPost == null) return;
     final updatedSections = List<BlogSection>.from(_blogPost!.sections);
-    updatedSections[index] =
-        updatedSections[index].copyWith(content: newContent);
+    updatedSections[index] = updatedSections[index].copyWith(
+      content: newContent,
+    );
     _blogPost = _blogPost!.copyWith(sections: updatedSections);
     notifyListeners();
   }
@@ -301,8 +302,9 @@ class AiBlogGeneratorViewModel extends ChangeNotifier {
   void updateSectionHeading(int index, String newHeading) {
     if (_blogPost == null) return;
     final updatedSections = List<BlogSection>.from(_blogPost!.sections);
-    updatedSections[index] =
-        updatedSections[index].copyWith(heading: newHeading);
+    updatedSections[index] = updatedSections[index].copyWith(
+      heading: newHeading,
+    );
     _blogPost = _blogPost!.copyWith(sections: updatedSections);
     notifyListeners();
   }
@@ -338,7 +340,8 @@ class AiBlogGeneratorViewModel extends ChangeNotifier {
     if (_blogPost == null) return;
 
     if (_authToken.trim().isEmpty) {
-      _publishError = 'No auth token set. Open Settings to add your publish auth token.';
+      _publishError =
+          'No auth token set. Open Settings to add your publish auth token.';
       notifyListeners();
       return;
     }

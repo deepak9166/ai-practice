@@ -2,7 +2,7 @@
 Blog Processor — fetch, clean, and AI-rewrite blog content.
 
 Supports two AI backends:
-  - "local"  → Ollama (http://localhost:11434)
+  - "local"  → Ollama (http://localhost:11434) with model fallback
   - "gemini" → Google Gemini REST API
 """
 
@@ -20,8 +20,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama3"
+OLLAMA_BASE_URL = "http://localhost:11434"
+OLLAMA_GENERATE_URL = f"{OLLAMA_BASE_URL}/api/generate"
+
+# Models to try in order — first success wins
+OLLAMA_MODELS = ["llama3", "llama3.1:8b", "mistral", "gemma2"]
 
 GEMINI_API_KEY = ""  # Set via env or override before calling
 GEMINI_URL = (
@@ -29,32 +32,109 @@ GEMINI_URL = (
     "gemini-2.0-flash:generateContent"
 )
 
-AI_PROMPT_TEMPLATE = """You are a professional blog rewriter. Rewrite the following blog content and return ONLY valid JSON (no markdown, no explanation, no code fences).
-
-The JSON must have these exact keys:
-{{
-  "title": "SEO-friendly English title",
-  "titleHindi": "Hindi translation of title",
-  "description": "Full rewritten HTML blog content wrapped in <p> tags",
-  "descriptionHindi": "Hindi translation of full content in <p> tags",
-  "summary": "2-3 sentence English summary",
-  "summaryHindi": "Hindi translation of summary",
-  "keywords": "comma separated English keywords",
-  "keywordHindi": "comma separated Hindi keywords",
-  "content": "Plain text version of the rewritten content"
-}}
-
-Blog Title: {title}
-
-Blog Content:
-{content}
-"""
-
 MAX_RETRIES = 1
+CONTENT_CHAR_LIMIT = 15000
 
 
 class BlogProcessError(Exception):
     """Raised when blog processing fails."""
+
+
+# ---------------------------------------------------------------------------
+# Ollama health / model discovery
+# ---------------------------------------------------------------------------
+def check_ollama_running() -> bool:
+    """Check if Ollama server is running."""
+    try:
+        resp = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
+        return resp.status_code == 200
+    except requests.ConnectionError:
+        return False
+
+
+def get_available_models() -> List[str]:
+    """Get list of locally available Ollama models."""
+    try:
+        resp = requests.get(f"{OLLAMA_BASE_URL}/api/tags", timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            return [m["name"] for m in data.get("models", [])]
+    except Exception:
+        pass
+    return []
+
+
+# ---------------------------------------------------------------------------
+# Prompt builder
+# ---------------------------------------------------------------------------
+def _build_prompt(
+    scraped_text: str,
+    source_url: str,
+    category_id: int = 0,
+    tags: Optional[List[int]] = None,
+) -> str:
+    tag_ids = tags or []
+
+    return f"""You are a professional bilingual (English + Hindi) blog writer and SEO expert.
+
+I will give you scraped text from a blog URL. Rewrite it into a fresh, original, SEO-friendly blog post in BOTH English and Hindi.
+
+Source URL: {source_url}
+
+Scraped content:
+{scraped_text}
+
+You MUST respond with ONLY valid JSON (no markdown fences, no extra text). Use this exact structure:
+
+{{
+"title": "English blog title",
+"titleHindi": "Hindi blog title",
+"articleType": {category_id},
+"slugUrl": "english-title-as-slug",
+"keywords": "keyword1, keyword2, keyword3",
+"keywordHindi": "hindi keyword1, hindi keyword2",
+"description": "<p>Full rewritten English blog as HTML with <p> and <h2> tags</p>",
+"descriptionHindi": "<p>Full rewritten Hindi blog as HTML with <p> and <h2> tags</p>",
+"summary": "2-3 sentence English summary",
+"summaryHindi": "2-3 sentence Hindi summary",
+"thumbnail": "",
+"thumbnailCredit": null,
+"articleFaqsDTOs": [
+{{
+"id": 0,
+"que": "English question about a key topic from the blog",
+"ans": "English answer explaining the topic clearly",
+"queHindi": "Same question in Hindi",
+"ansHindi": "Same answer in Hindi",
+"isUpdate": false
+}}
+],
+"articleTagsDTOs": {tag_ids},
+"descriptionJson": "{{}}",
+"descriptionJsonHindi": "{{}}"
+}}
+
+Rules:
+-The English description must be well-structured HTML with <h2> headings and <p> paragraphs
+-The Hindi description must be a faithful translation, also in HTML format
+-keywords should be 5-8 comma-separated relevant SEO keywords
+-slugUrl must be lowercase, hyphen-separated, no special characters
+-summary should be concise, 2-3 sentences
+-Respond with ONLY the JSON object, nothing else
+-Change Website name, if getting other same just replace with PreptTM
+-Total word limit for description and descriptionHindi combined should not exceed 800+ words
+-Generate 3-5 FAQs in articleFaqsDTOs based on the blog content
+-Each FAQ must have que/ans in English and queHindi/ansHindi in Hindi
+-Use id:0 and isUpdate:false for all FAQs
+-Tables MUST be wrapped like: <div class="editor-table"><table><tbody><tr><td>cell</td></tr></tbody></table></div>
+-Add at least one HTML table wherever helpful for easy understanding
+-Blog content must feel natural and human-written
+-Completely rewrite the content; do NOT copy from source
+-Keep language simple and easy to understand
+-Hindi content should be natural and conversational
+-Use common English words in Hindi where appropriate (app, online, process)
+-Add govt links if found (.gov, .nic.in, .org) with anchor tags
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -102,19 +182,11 @@ def fetch_blog_content(url: str) -> Dict[str, str]:
     if not content_el:
         raise BlogProcessError("Could not find any content in the blog page.")
 
-    # Get paragraphs
-    paragraphs = content_el.find_all("p")
-    text_parts = [p.get_text(strip=True) for p in paragraphs if p.get_text(strip=True)]
+    # Get full text with structure preserved
+    content = content_el.get_text(separator="\n", strip=True)
 
-    if not text_parts:
-        # Fallback: get all text
-        text_parts = [content_el.get_text(separator="\n", strip=True)]
-
-    content = "\n\n".join(text_parts)
-
-    # Trim to ~4000 chars to stay within AI token limits
-    if len(content) > 4000:
-        content = content[:4000] + "..."
+    if len(content) > CONTENT_CHAR_LIMIT:
+        content = content[:CONTENT_CHAR_LIMIT]
 
     logger.info("Extracted blog: title=%s, content_length=%d", title[:50], len(content))
     return {"title": title, "content": content}
@@ -123,15 +195,14 @@ def fetch_blog_content(url: str) -> Dict[str, str]:
 # ---------------------------------------------------------------------------
 # Step 2: AI processing
 # ---------------------------------------------------------------------------
-def _build_prompt(title: str, content: str) -> str:
-    return AI_PROMPT_TEMPLATE.format(title=title, content=content)
-
-
 def _parse_ai_json(raw: str) -> Dict[str, Any]:
     """Extract JSON from AI response, handling markdown fences."""
-    # Strip markdown code fences if present
-    cleaned = re.sub(r"^```(?:json)?\s*", "", raw.strip())
-    cleaned = re.sub(r"\s*```$", "", cleaned)
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
 
     try:
         return json.loads(cleaned)
@@ -143,40 +214,95 @@ def _parse_ai_json(raw: str) -> Dict[str, Any]:
         raise BlogProcessError(f"AI returned invalid JSON: {raw[:300]}")
 
 
-def process_with_ollama(title: str, content: str) -> Dict[str, Any]:
-    """Send content to local Ollama and get structured JSON back."""
-    prompt = _build_prompt(title, content)
+def process_with_ollama(
+    scraped_text: str,
+    source_url: str,
+    category_id: int = 0,
+    tags: Optional[List[int]] = None,
+    model: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Send content to local Ollama with model fallback.
+    Tries each model in OLLAMA_MODELS until one succeeds.
+    """
+    if not check_ollama_running():
+        raise BlogProcessError("Ollama is not running. Start it with: ollama serve")
 
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False,
-    }
+    prompt = _build_prompt(scraped_text, source_url, category_id, tags)
 
-    for attempt in range(MAX_RETRIES + 1):
+    available = get_available_models()
+    # Strip ":latest" suffix for matching (e.g. "llama3:latest" matches "llama3")
+    available_base = {m.split(":")[0] for m in available} | set(available)
+    if model:
+        models_to_try = [model]
+    else:
+        models_to_try = [m for m in OLLAMA_MODELS if m in available_base]
+
+    if not models_to_try:
+        raise BlogProcessError(
+            f"No Ollama models available. Installed: {available}. "
+            f"Expected one of: {OLLAMA_MODELS}"
+        )
+
+    last_error = None
+
+    for i, m in enumerate(models_to_try):
+        logger.info("[Ollama] Trying model %d/%d: %s", i + 1, len(models_to_try), m)
         try:
-            logger.info("Ollama request (attempt %d)", attempt + 1)
-            resp = requests.post(OLLAMA_URL, json=payload, timeout=300)
-            resp.raise_for_status()
+            resp = requests.post(
+                OLLAMA_GENERATE_URL,
+                json={
+                    "model": m,
+                    "prompt": prompt,
+                    "stream": False,
+                    "format": "json",
+                    "options": {
+                        "temperature": 0.7,
+                        "num_predict": 4096,
+                    },
+                },
+                timeout=600,  # 10 min — local models can be slow with large content
+            )
 
-            body = resp.json()
-            raw_response = body.get("response", "")
-            logger.info("Ollama raw response length: %d", len(raw_response))
+            if resp.status_code != 200:
+                logger.warning("[Ollama] Model %s failed: HTTP %s", m, resp.status_code)
+                last_error = f"Model {m}: HTTP {resp.status_code}"
+                continue
 
+            data = resp.json()
+            raw_response = data.get("response", "")
+
+            if not raw_response.strip():
+                logger.warning("[Ollama] Model %s returned empty response", m)
+                last_error = f"Model {m}: empty response"
+                continue
+
+            logger.info("[Ollama] Model %s succeeded (%d chars)", m, len(raw_response))
             return _parse_ai_json(raw_response)
 
-        except (requests.RequestException, BlogProcessError, json.JSONDecodeError) as exc:
-            logger.warning("Ollama attempt %d failed: %s", attempt + 1, exc)
-            if attempt >= MAX_RETRIES:
-                raise BlogProcessError(f"Ollama processing failed after retries: {exc}") from exc
-            time.sleep(2)
+        except requests.Timeout:
+            logger.warning("[Ollama] Model %s timed out", m)
+            last_error = f"Model {m}: timeout"
+            continue
+        except BlogProcessError:
+            raise
+        except Exception as exc:
+            logger.warning("[Ollama] Model %s error: %s", m, exc)
+            last_error = str(exc)
+            continue
 
-    raise BlogProcessError("Ollama processing failed unexpectedly")
+    raise BlogProcessError(f"All Ollama models failed. Last error: {last_error}")
 
 
-def process_with_gemini(title: str, content: str, api_key: str) -> Dict[str, Any]:
+def process_with_gemini(
+    scraped_text: str,
+    source_url: str,
+    category_id: int = 0,
+    tags: Optional[List[int]] = None,
+    api_key: str = "",
+) -> Dict[str, Any]:
     """Send content to Gemini API and get structured JSON back."""
-    prompt = _build_prompt(title, content)
+    prompt = _build_prompt(scraped_text, source_url, category_id, tags)
 
     url = f"{GEMINI_URL}?key={api_key}"
     payload = {
@@ -213,50 +339,6 @@ def process_with_gemini(title: str, content: str, api_key: str) -> Dict[str, Any
 
 
 # ---------------------------------------------------------------------------
-# Step 3: Transform to final response format
-# ---------------------------------------------------------------------------
-def _slugify(text: str) -> str:
-    """Simple slug generator."""
-    slug = text.lower().strip()
-    slug = re.sub(r"[^\w\s-]", "", slug)
-    slug = re.sub(r"[\s_]+", "-", slug)
-    slug = re.sub(r"-+", "-", slug).strip("-")
-    return slug[:100]
-
-
-def build_final_response(
-    ai_data: Dict[str, Any],
-    category_id: int,
-    tags: List[int],
-) -> Dict[str, Any]:
-    """Transform AI output into the final API response format."""
-    title = ai_data.get("title", "")
-    slug = _slugify(title) if title else ""
-
-    return {
-        "success": True,
-        "data": {
-            "title": title,
-            "titleHindi": ai_data.get("titleHindi", ""),
-            "articleType": category_id,
-            "slugUrl": slug,
-            "keywords": ai_data.get("keywords", ""),
-            "keywordHindi": ai_data.get("keywordHindi", ""),
-            "description": ai_data.get("description", ""),
-            "descriptionHindi": ai_data.get("descriptionHindi", ""),
-            "summary": ai_data.get("summary", ""),
-            "summaryHindi": ai_data.get("summaryHindi", ""),
-            "thumbnail": "",
-            "thumbnailCredit": None,
-            "articleFaqsDTOs": [],
-            "articleTagsDTOs": tags,
-            "descriptionJson": "{}",
-            "descriptionJsonHindi": "{}",
-        },
-    }
-
-
-# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 def process_blog(
@@ -280,14 +362,19 @@ def process_blog(
     if not content.strip():
         raise BlogProcessError("No meaningful content found in the blog.")
 
-    # Step 2: AI processing
+    # Trim content for local mode — llama3 8B is slow with very large input
+    if mode == "local" and len(content) > 5000:
+        content = content[:5000]
+        logger.info("Trimmed content to 5000 chars for local mode")
+
+    # Step 2: AI processing — returns the full response directly from AI
     if mode == "gemini":
         key = gemini_api_key or GEMINI_API_KEY
         if not key:
             raise BlogProcessError("Gemini API key is required for mode='gemini'")
-        ai_data = process_with_gemini(title, content, key)
+        ai_data = process_with_gemini(content, url, category_id, tags, key)
     else:
-        ai_data = process_with_ollama(title, content)
+        ai_data = process_with_ollama(content, url, category_id, tags)
 
-    # Step 3: Build final response
-    return build_final_response(ai_data, category_id, tags)
+    # The AI response already matches the final format from the prompt
+    return {"success": True, "data": ai_data}

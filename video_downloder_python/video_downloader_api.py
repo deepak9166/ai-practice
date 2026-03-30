@@ -24,7 +24,7 @@ import requests
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, HttpUrl
 
-from blog_processor import BlogProcessError, process_blog
+from blog_processor import BlogProcessError, check_ollama_running, get_available_models, process_blog
 from instagram_video_downloader import (
     InstagramDownloadError,
     cleanup_directory,
@@ -83,10 +83,23 @@ app = FastAPI(
         "Download Instagram/Snapchat videos and process blogs with AI.\n\n"
         "- POST /instagram/download\n"
         "- POST /snapchat/download\n"
-        "- POST /process-blog"
+        "- POST /process-blog\n"
+        "- GET /health"
     ),
     version="1.0.0",
 )
+
+
+@app.get("/health", tags=["system"])
+async def health():
+    """Check server and Ollama status."""
+    ollama_ok = check_ollama_running()
+    models = get_available_models() if ollama_ok else []
+    return {
+        "status": "ok",
+        "ollama": "running" if ollama_ok else "not running",
+        "available_models": models,
+    }
 
 
 _DEFAULT_KEYWORDS = [

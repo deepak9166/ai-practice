@@ -54,7 +54,16 @@ http://<your-server-ip>:8000
     "summaryHindi": "Hindi summary",
     "thumbnail": "",
     "thumbnailCredit": null,
-    "articleFaqsDTOs": [],
+    "articleFaqsDTOs": [
+      {
+        "id": 0,
+        "que": "What is FastAPI?",
+        "ans": "FastAPI is a modern Python web framework...",
+        "queHindi": "FastAPI क्या है?",
+        "ansHindi": "FastAPI एक आधुनिक Python वेब फ्रेमवर्क है...",
+        "isUpdate": false
+      }
+    ],
     "articleTagsDTOs": [13, 6, 21],
     "descriptionJson": "{}",
     "descriptionJsonHindi": "{}"
